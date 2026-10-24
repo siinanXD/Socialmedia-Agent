@@ -1,0 +1,29 @@
+# Python / JS / editor
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+node_modules/
+.next/
+.env
+.env.*
+!.env.example
+!.env.sample
+.vscode/
+.idea/
+# User content and derived artifacts
+uploads/
+media/
+exports/
+tmp/
+*.mp4
+*.mov
+*.mkv
+*.wav
+*.mp3
+*.webm
+*.sqlite3
+*.db
+# Keep fixtures via explicit exception after rights review
