@@ -4,8 +4,8 @@
 - API: Python 3.12+, FastAPI, typed Pydantic request/response schemas.
 - Worker: async queue for ingest/analysis/render; retries, idempotency keys, job progress, cancellation and cost accounting.
 - Media: FFmpeg/ffprobe baseline; optional scene detector, ASR and embeddings behind versioned adapters; CPU fallback; GPU optional.
-- Storage: creator-isolated object storage, immutable originals, derived media, retention and deletion policies.
-- Persistence: PostgreSQL (Supabase candidate), row-level isolation, migrations, auditable job/post/event history.
+- Storage: separate private Supabase Storage bucket(s) in the same project for creator-isolated immutable originals and derived media, signed URLs, quotas, retention and deletion policies. Do not store video blobs in PostgreSQL.
+- Persistence: reuse existing Supabase project `Content-Agent-Lernapp` (project ref `zxielkiwgcgxyudqemjb`) as requested, with a dedicated `social_media` PostgreSQL schema, app-scoped DB privileges, tenant-aware RLS where exposed, separate migration ownership and auditable job/post/event history. Do not modify existing Content Agent / Leitstand tables or schemas without impact assessment.
 - UI: optional Next.js dashboard for upload, preview, human review and export.
 - Optional adapters: OpenShorts, Postiz, OpenNolan, PhotoCraft/FilmCraft/SoundCraft, Voicebox — none selected until verified audit.
 - Observability: structured logs without PII/secrets, job traces, errors, render times, model costs and audit events.
