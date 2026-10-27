@@ -6,7 +6,12 @@ from pathlib import Path
 import pytest
 
 from socialmedia_worker.probe import probe
-from socialmedia_worker.render import FfmpegNotFoundError, RenderError, extract_cover, render_vertical
+from socialmedia_worker.render import (
+    FfmpegNotFoundError,
+    RenderError,
+    extract_cover,
+    render_vertical,
+)
 
 
 def _make_source(path: Path, *, audio: bool) -> Path:
@@ -30,9 +35,9 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-@pytest.fixture
-def src(tmp_path: Path) -> Path:
-    return _make_source(tmp_path / "src.mp4", audio=True)
+@pytest.fixture(scope="module")
+def src(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    return _make_source(tmp_path_factory.mktemp("source") / "src.mp4", audio=True)
 
 
 def test_render_vertical_outputs_1080x1920_for_the_range(src: Path, tmp_path: Path) -> None:

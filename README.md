@@ -23,4 +23,19 @@ cd worker && uv sync && uv run pytest
 uv run ruff check . && uv run mypy .
 ```
 
-Stand: `worker/` enthaelt nur `probe(path)` (Dauer, Breite, Hoehe per ffprobe). Keine Queue, kein Upload, kein Rendering.
+Stand: `worker/` enthaelt nur `probe(path)` (Dauer, Breite, Hoehe per ffprobe). Keine Queue, kein Upload.
+
+Render-Baustein (`socialmedia_worker.render`, FFmpeg per Subprozess ohne Shell):
+
+```python
+from pathlib import Path
+from socialmedia_worker.render import extract_cover, render_vertical
+
+result = render_vertical(Path("quelle.mp4"), start=1.0, end=3.0, out=Path("clip.mp4"))
+# 1080x1920, H.264/AAC, Mitte zugeschnitten; Quelle bleibt unveraendert
+extract_cover(result.path, at=1.0, out=Path("cover.jpg"))  # ein JPEG-Frame
+```
+
+`ValueError` bei ungueltigem Zeitbereich (`0 <= start < end <= Dauer`) oder `out == src`; `FfmpegNotFoundError`
+ohne ffmpeg; `RenderError` bei ffmpeg-Exit != 0 (unvollstaendige Ausgabe wird geloescht). Quellen ohne Audio
+werden ohne Tonspur gerendert. Kein Subjekt-Tracking, keine Untertitel, keine Musik, keine Varianten.
