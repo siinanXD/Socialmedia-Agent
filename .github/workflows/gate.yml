@@ -31,7 +31,11 @@ concurrency:
 
 jobs:
   gate:
-    if: ${{ !inputs.credentials_only && (github.event_name != 'issue_comment' || github.event.issue.pull_request) }}
+    # Öffentliches Repo: Kommentare zählen nur von Codex oder Personen mit Repo-Zugang, sonst könnte Spam das Gate verdrängen.
+    if: >-
+      ${{ !inputs.credentials_only && (github.event_name != 'issue_comment' || (github.event.issue.pull_request &&
+      (github.event.comment.user.login == 'chatgpt-codex-connector[bot]' ||
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)))) }}
     permissions:
       id-token: write
       contents: write
