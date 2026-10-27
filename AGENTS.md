@@ -17,3 +17,8 @@ This repository owns the product. Leitstand coordinates issues, dispatch, review
 - Handle retries idempotently. Never double-post.
 - Each change needs tests, documented usage, reproducible setup, and evidence. No "done" without real end-to-end proof.
 - Keep README, architecture and Linear updated; report blockers clearly. Do not auto-merge security-sensitive changes.
+
+## Workflow (Leitstand 2.0)
+- One Linear issue, one branch `claude/sin-<nr>-…` or `codex/sin-<nr>-…`, one PR. Title as Conventional Commit with `(SIN-<nr>)`.
+- Test first, then code. Smallest diff; no new dependency for a few lines.
+- Subscription access only (Claude, ChatGPT/Codex, Cursor). No model API keys, no API fallback.
