@@ -1,0 +1,122 @@
+name: gate
+
+# Gate aus siinanXD/leitstand-2 (SIN-1107, SIN-1147), hier nur angeschlossen (SIN-1150):
+# build grün + Codex-Review ohne offene Funde → Squash-Merge; `risk:low` merged ohne Review, `blockiert` stoppt,
+# Änderungen unter .github/ merged Sinan von Hand.
+# Nur Ereignisse, die die Workflow-Fassung von main ausführen (pull_request_target, issue_comment, workflow_run, schedule):
+# ein PR kann das Gate so nicht selbst umbauen. Ausgeführt wird der Gate-Code von leitstand-2 main, nie Code aus dem PR.
+# leitstand-2 ist privat: Checkout mit dem gemeinsamen Review-Token aus Infisical (docs/github-zugang.md dort).
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+  issue_comment:
+    types: [created, edited]
+  workflow_run:
+    workflows: [build]
+    types: [completed]
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+    inputs:
+      credentials_only:
+        description: Nur OIDC und GitHub-Zugriff vom ausgewählten Branch prüfen, ohne Gate/Merge.
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: gate
+  cancel-in-progress: false
+
+jobs:
+  gate:
+    if: ${{ !inputs.credentials_only && (github.event_name != 'issue_comment' || github.event.issue.pull_request) }}
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+      issues: read
+      checks: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: GitHub review credentials
+        uses: ./.github/actions/review-token
+        with:
+          domain: ${{ vars.INFISICAL_DOMAIN || 'https://eu.infisical.com' }}
+          audience: ${{ vars.INFISICAL_OIDC_AUDIENCE || 'https://github.com/siinanXD' }}
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+          project-id: ${{ vars.INFISICAL_PROJECT_ID }}
+          environment: ${{ vars.INFISICAL_ENVIRONMENT || 'prod' }}
+          secret-path: ${{ vars.INFISICAL_GITHUB_TOKEN_PATH || '/agents' }}
+          secret-name: ${{ vars.INFISICAL_GITHUB_TOKEN_NAME || 'GH_BOOTSTRAP_TOKEN' }}
+          fallback-token: ${{ secrets.CODEX_ANSTOSS_TOKEN }}
+      - name: Gate-Code von leitstand-2 main
+        uses: actions/checkout@v4
+        with:
+          repository: siinanXD/leitstand-2
+          ref: main
+          path: leitstand-2
+          token: ${{ env.CODEX_ANSTOSS_TOKEN }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: leitstand-2/package-lock.json
+      - working-directory: leitstand-2
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Gate
+        working-directory: leitstand-2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # Ein Ereignis prüft nur seinen PR; Zeitplan und Hand-Start prüfen alle offenen.
+          PR_NUMMER: ${{ github.event.pull_request.number || github.event.issue.number || github.event.workflow_run.pull_requests[0].number || '' }}
+        run: npx tsx src/gate-lauf.ts
+
+  credentials-smoke:
+    if: github.event_name == 'workflow_dispatch' && inputs.credentials_only
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Nur expliziter Handstart kann den ausgewählten Branch testen.
+      # Automatische PR-Ereignisse führen weiterhin nur das Gate von main aus.
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: GitHub review credentials
+        uses: ./.github/actions/review-token
+        with:
+          domain: ${{ vars.INFISICAL_DOMAIN || 'https://eu.infisical.com' }}
+          audience: ${{ vars.INFISICAL_OIDC_AUDIENCE || 'https://github.com/siinanXD' }}
+          identity-id: ${{ vars.INFISICAL_IDENTITY_ID }}
+          project-id: ${{ vars.INFISICAL_PROJECT_ID }}
+          environment: ${{ vars.INFISICAL_ENVIRONMENT || 'prod' }}
+          secret-path: ${{ vars.INFISICAL_GITHUB_TOKEN_PATH || '/agents' }}
+          secret-name: ${{ vars.INFISICAL_GITHUB_TOKEN_NAME || 'GH_BOOTSTRAP_TOKEN' }}
+          fallback-token: ${{ secrets.CODEX_ANSTOSS_TOKEN }}
+      - name: Check token owner, repository and leitstand-2 access without writing
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          const headers = { Authorization: `Bearer ${process.env.CODEX_ANSTOSS_TOKEN}`, Accept: 'application/vnd.github+json' };
+          const get = (pfad) => fetch(`https://api.github.com${pfad}`, { headers, signal: AbortSignal.timeout(20000) });
+          const user = await get('/user');
+          if (!user.ok) throw new Error(`GitHub user check: HTTP ${user.status}`);
+          const { login } = await user.json();
+          if (login !== process.env.GITHUB_REPOSITORY_OWNER) throw new Error('Token belongs to a different account');
+          const repo = await get(`/repos/${process.env.GITHUB_REPOSITORY}/issues?per_page=1`);
+          if (!repo.ok) throw new Error(`GitHub repository issues check: HTTP ${repo.status}`);
+          const gate = await get('/repos/siinanXD/leitstand-2/contents/src/gate-lauf.ts?ref=main');
+          if (!gate.ok) throw new Error(`leitstand-2 gate code check: HTTP ${gate.status}`);
+          console.log('Infisical credential read and GitHub account/repository/leitstand-2 access: SUCCESS');
+          NODE

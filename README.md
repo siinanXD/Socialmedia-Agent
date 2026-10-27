@@ -11,6 +11,6 @@ Upload multiple raw videos and photos or import a watched folder; identify promi
 - No working application, deployment or automated publishing exists yet.
 - [Linear SIN-1077](https://linear.app/sinan-kahraman/issue/SIN-1077) tracks the project.
 - Leitstand is the future orchestrator, not a runtime dependency for the first MVP.
-- Do not dispatch builds, provision paid services, deploy or publish without explicit authorization.
+- Build released by Sinan on 27.10.2026: agents build autonomously from Linear (see `AGENTS.md` for stack and rules). Still no paid services, production deployment or publishing without explicit authorization.
 
 See `docs/` and `AGENTS.md` in the planning pull request for architecture, phased roadmap, contracts, acceptance criteria and implementation guidance.
