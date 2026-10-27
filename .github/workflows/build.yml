@@ -47,7 +47,11 @@ jobs:
         uses: astral-sh/setup-uv@v6
       - name: FFmpeg
         if: hashFiles('worker/pyproject.toml') != ''
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg
+        # man-db-Trigger abschalten: sonst dauert apt auf ubuntu-24.04 mehrere Minuten.
+        run: |
+          sudo rm -f /var/lib/man-db/auto-update
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends ffmpeg
       - name: Worker prüfen
         if: hashFiles('worker/pyproject.toml') != ''
         working-directory: worker
