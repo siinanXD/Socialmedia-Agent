@@ -7,7 +7,7 @@
 - Storage: separate private Supabase Storage bucket(s) in the same project for creator-isolated immutable originals and derived media, signed URLs, quotas, retention and deletion policies. Do not store video blobs in PostgreSQL.
 - Persistence: reuse existing Supabase project `Content-Agent-Lernapp` (project ref `zxielkiwgcgxyudqemjb`) as requested, with a dedicated `social_media` PostgreSQL schema, app-scoped DB privileges, tenant-aware RLS where exposed, separate migration ownership and auditable job/post/event history. Do not modify existing Content Agent / Leitstand tables or schemas without impact assessment.
 - UI: Next.js app for upload, preview, human review and export.
-- Optional adapters: OpenShorts, Postiz, OpenNolan, PhotoCraft/FilmCraft/SoundCraft, Voicebox — none selected until verified audit.
+- Optional adapters: nach `docs/UPSTREAM_AUDIT.md` (SIN-1138) ist keiner der sieben Kandidaten gewaehlt; nur Voicebox bleibt als optionaler Wrapper fuer Phase 2 vorgemerkt. FFmpeg/ffprobe ist die Basis.
 - Observability: structured logs without PII/secrets, job traces, errors, render times, model costs and audit events.
 
 ## Trust boundaries
