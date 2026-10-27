@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pytest
 
-from socialmedia_worker import probe as probe_module
 from socialmedia_worker.probe import FfprobeNotFoundError, probe
 
 
@@ -11,7 +10,8 @@ from socialmedia_worker.probe import FfprobeNotFoundError, probe
 def clip(tmp_path: Path) -> Path:
     path = tmp_path / "clip.mp4"
     subprocess.run(
-        ["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=25", str(path)],
+        ["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=25",
+         str(path)],
         check=True,
     )
     return path
@@ -30,7 +30,7 @@ def test_probe_rejects_file_without_video(tmp_path: Path) -> None:
         probe(bad)
 
 
-def test_probe_reports_missing_ffprobe(clip: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(probe_module.shutil, "which", lambda _name: None)
+def test_probe_reports_missing_ffprobe(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("shutil.which", lambda _name: None)
     with pytest.raises(FfprobeNotFoundError, match="ffprobe"):
-        probe(clip)
+        probe(tmp_path / "any.mp4")

@@ -14,3 +14,13 @@ Upload multiple raw videos and photos or import a watched folder; identify promi
 - Build released by Sinan on 27.10.2026: agents build autonomously from Linear (see `AGENTS.md` for stack and rules). Still no paid services, production deployment or publishing without explicit authorization.
 
 See `docs/` and `AGENTS.md` in the planning pull request for architecture, phased roadmap, contracts, acceptance criteria and implementation guidance.
+
+## Worker lokal
+Voraussetzungen: [uv](https://docs.astral.sh/uv/) und FFmpeg (`ffmpeg`/`ffprobe` im PATH).
+
+```
+cd worker && uv sync && uv run pytest
+uv run ruff check . && uv run mypy .
+```
+
+Stand: `worker/` enthaelt nur `probe(path)` (Dauer, Breite, Hoehe per ffprobe). Keine Queue, kein Upload, kein Rendering.
