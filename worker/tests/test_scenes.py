@@ -2,6 +2,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from socialmedia_worker.scenes import FfmpegNotFoundError, SceneCut, detect_scenes, to_segments
 
 
