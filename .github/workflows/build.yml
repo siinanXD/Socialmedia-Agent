@@ -1,0 +1,69 @@
+name: build
+
+# SIN-1150: grün auf reinem Doku-Stand. Sobald ein Teil existiert, wird er ohne Workflow-Änderung geprüft:
+#   package-lock.json      → Next.js-App: lint (falls vorhanden), typecheck, test, build (falls vorhanden)
+#   worker/pyproject.toml  → Python-Worker: ruff, mypy, pytest (mit FFmpeg)
+#   supabase/config.toml   → lokale Datenbank mit allen Migrationen, DB-Tests aus supabase/tests
+# Der Job heißt `build`, weil das Gate genau diesen Check liest.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: package.json braucht package-lock.json
+        if: hashFiles('package.json') != '' && hashFiles('package-lock.json') == ''
+        run: |
+          echo '::error::package-lock.json fehlt (npm install ausführen und mit einchecken).'
+          exit 1
+      - if: hashFiles('package-lock.json') != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - if: hashFiles('package-lock.json') != ''
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - if: hashFiles('package-lock.json') != ''
+        run: npm run lint --if-present
+      - if: hashFiles('package-lock.json') != ''
+        run: npm run typecheck
+      - if: hashFiles('package-lock.json') != ''
+        run: npm test
+      - if: hashFiles('package-lock.json') != ''
+        run: npm run build --if-present
+
+      - if: hashFiles('worker/pyproject.toml') != ''
+        uses: astral-sh/setup-uv@v6
+      - name: FFmpeg
+        if: hashFiles('worker/pyproject.toml') != ''
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg
+      - name: Worker prüfen
+        if: hashFiles('worker/pyproject.toml') != ''
+        working-directory: worker
+        run: |
+          uv sync --locked
+          uv run ruff check .
+          uv run mypy .
+          uv run pytest
+
+      - if: hashFiles('supabase/config.toml') != ''
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Migrationen anwenden
+        if: hashFiles('supabase/config.toml') != ''
+        run: supabase db start
+      - name: DB-Tests
+        if: hashFiles('supabase/tests/**') != ''
+        run: supabase test db

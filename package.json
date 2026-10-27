@@ -1,0 +1,1 @@
+{ "name": "probe", "private": true, "scripts": { "typecheck": "node -e \"console.log('typecheck ok')\"", "test": "node -e \"console.log('test ok')\"" } }
