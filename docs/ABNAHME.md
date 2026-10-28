@@ -5,7 +5,7 @@
 | Repository | README, AGENTS, architecture, roadmap and license decision | Planning |
 | Setup | Fresh clone installs and starts on supported environment | Partial: `worker/` installs and tests with `uv sync && uv run pytest` (SIN-1139); app, database and end-to-end start not implemented |
 | Upload | Batch of >=2 videos plus >=1 image, validates type/size and ownership | Not implemented |
-| Highlights | JSON with asset ID, start/end, confidence and rationale; editable | Not implemented |
+| Highlights | JSON with asset ID, start/end, confidence and rationale; editable | Not implemented (Teilschritt: Szenenerkennung `detect_scenes`/`to_segments` im Worker, SIN-1165; keine Auswahl, keine Begründung, kein Manifest) |
 | Render | >=2 playable 9:16 drafts with subtitles, cover and caption; inspect actual output | Not implemented (building block `render_vertical`/`extract_cover` exists in `worker/`, SIN-1166: 9:16 cut and cover only; no subtitles, caption, variants or pipeline integration) |
 | Reliability | Retry, cancellation, idempotency, duplicate prevention, cost limit | Not implemented |
 | Privacy | Isolation tests, upload scanning, deletion, secret redaction | Not implemented |

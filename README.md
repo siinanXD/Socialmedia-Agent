@@ -23,7 +23,21 @@ cd worker && uv sync && uv run pytest
 uv run ruff check . && uv run mypy .
 ```
 
-Stand: `worker/` enthaelt nur `probe(path)` (Dauer, Breite, Hoehe per ffprobe). Keine Queue, kein Upload.
+Stand: `worker/` enthaelt `probe(path)` (Dauer, Breite, Hoehe per ffprobe), die Szenenerkennung (SIN-1165) und den Render-Baustein (SIN-1166). Keine Queue, kein Upload.
+
+Szenenerkennung:
+
+```python
+from pathlib import Path
+from socialmedia_worker.probe import probe
+from socialmedia_worker.scenes import detect_scenes, to_segments
+
+path = Path("clip.mp4")
+cuts = detect_scenes(path, threshold=0.3)       # [SceneCut(time=1.0, score=0.69)]
+segments = to_segments(cuts, probe(path).duration)  # [(0.0, 1.0), (1.0, 2.0)]
+```
+
+`detect_scenes` ruft `ffmpeg` (scene-Filter) als Subprozess auf. Bewiesen ist es nur an einem zur Laufzeit erzeugten Testclip mit einem harten Schnitt (`worker/tests/test_scenes.py`); wie gut die Erkennung auf echtem Material und mit dem Schwellwert 0,3 arbeitet, ist nicht gemessen. Keine Highlight-Bewertung.
 
 Render-Baustein (`socialmedia_worker.render`, FFmpeg per Subprozess ohne Shell):
 
@@ -33,9 +47,10 @@ from socialmedia_worker.render import extract_cover, render_vertical
 
 result = render_vertical(Path("quelle.mp4"), start=1.0, end=3.0, out=Path("clip.mp4"))
 # 1080x1920, H.264/AAC, Mitte zugeschnitten; Quelle bleibt unveraendert
-extract_cover(result.path, at=1.0, out=Path("cover.jpg"))  # ein JPEG-Frame
+extract_cover(result.path, at=1.0, out=Path("cover.jpg"))  # ein JPEG-Frame, geprueft per ffprobe
 ```
 
-`ValueError` bei ungueltigem Zeitbereich (`0 <= start < end <= Dauer`) oder `out == src`; `FfmpegNotFoundError`
-ohne ffmpeg; `RenderError` bei ffmpeg-Exit != 0 (unvollstaendige Ausgabe wird geloescht). Quellen ohne Audio
-werden ohne Tonspur gerendert. Kein Subjekt-Tracking, keine Untertitel, keine Musik, keine Varianten.
+`ValueError` bei ungueltigem Zeitbereich (`0 <= start < end <= Dauer`, Cover `0 <= at < Dauer`) oder `out == src`;
+`FileExistsError`, wenn `out` schon existiert (nichts wird ueberschrieben); `FfmpegNotFoundError` ohne ffmpeg;
+`RenderError` bei ffmpeg-Exit != 0, leerer Ausgabe oder Timeout (600 s Render, 60 s Cover; unvollstaendige Ausgabe wird
+geloescht). Quellen ohne Audio werden ohne Tonspur gerendert. Kein Subjekt-Tracking, keine Untertitel, keine Musik, keine Varianten.
