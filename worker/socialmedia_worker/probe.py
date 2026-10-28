@@ -22,11 +22,22 @@ def probe(path: Path) -> ProbeResult:
     if ffprobe is None:
         raise FfprobeNotFoundError("ffprobe not found on PATH; install FFmpeg (ffmpeg.org)")
     proc = subprocess.run(
-        [ffprobe, "-v", "error", "-select_streams", "v:0",
-         "-show_entries", "stream=width,height:format=duration",
-         "-print_format", "json", str(path)],
+        [
+            ffprobe,
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "stream=width,height:format=duration",
+            "-print_format",
+            "json",
+            "-i",
+            str(path),
+        ],
         capture_output=True,
         text=True,
+        timeout=60,
     )
     try:
         data = json.loads(proc.stdout)

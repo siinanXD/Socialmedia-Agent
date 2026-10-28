@@ -24,9 +24,19 @@ def _make_source(path: Path, *, audio: bool) -> Path:
 
 def _stream_types(path: Path) -> list[str]:
     out = subprocess.run(
-        ["ffprobe", "-v", "error", "-show_entries", "stream=codec_type", "-print_format", "json",
-         str(path)],
-        capture_output=True, text=True, check=True,
+        [
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "stream=codec_type",
+            "-print_format",
+            "json",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
     ).stdout
     return [s["codec_type"] for s in json.loads(out)["streams"]]
 
@@ -62,9 +72,7 @@ def test_render_vertical_handles_source_without_audio(tmp_path: Path) -> None:
     assert (probe(out).width, probe(out).height) == (1080, 1920)
 
 
-@pytest.mark.parametrize(
-    ("start", "end"), [(-1.0, 2.0), (2.0, 2.0), (3.0, 1.0), (0.0, 5.0)]
-)
+@pytest.mark.parametrize(("start", "end"), [(-1.0, 2.0), (2.0, 2.0), (3.0, 1.0), (0.0, 5.0)])
 def test_render_vertical_rejects_invalid_range(
     src: Path, tmp_path: Path, start: float, end: float
 ) -> None:
@@ -113,9 +121,45 @@ def test_extract_cover_from_rendered_clip_is_vertical(src: Path, tmp_path: Path)
     assert (info.width, info.height) == (1080, 1920)
 
 
-def test_extract_cover_rejects_time_outside_video(src: Path, tmp_path: Path) -> None:
+@pytest.mark.parametrize("at", [9.0, -0.5])
+def test_extract_cover_rejects_time_outside_video(src: Path, tmp_path: Path, at: float) -> None:
     with pytest.raises(ValueError, match="at"):
-        extract_cover(src, at=9.0, out=tmp_path / "cover.jpg")
+        extract_cover(src, at=at, out=tmp_path / "cover.jpg")
+    assert not (tmp_path / "cover.jpg").exists()
+
+
+def test_extract_cover_rejects_time_at_end_of_video(src: Path, tmp_path: Path) -> None:
+    # Codex review SIN-1166: at == duration lies after the last frame and ffmpeg writes nothing.
+    duration = probe(src).duration
+    with pytest.raises(ValueError, match="at"):
+        extract_cover(src, at=duration, out=tmp_path / "cover.jpg")
+
+
+def test_output_is_never_overwritten(src: Path, tmp_path: Path) -> None:
+    out = tmp_path / "taken.mp4"
+    out.write_bytes(b"earlier render")
+    with pytest.raises(FileExistsError, match="overwrite"):
+        render_vertical(src, start=0.0, end=1.0, out=out)
+    with pytest.raises(FileExistsError, match="overwrite"):
+        extract_cover(src, at=1.0, out=out)
+    assert out.read_bytes() == b"earlier render"
+
+
+def test_render_timeout_is_reported_and_leaves_no_output(
+    src: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_run = subprocess.run
+
+    def hang(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        if Path(cmd[0]).stem == "ffmpeg":
+            raise subprocess.TimeoutExpired(cmd, 1.0)
+        return real_run(cmd, **kwargs)  # type: ignore[call-overload]
+
+    monkeypatch.setattr("socialmedia_worker.render.subprocess.run", hang)
+    out = tmp_path / "out.mp4"
+    with pytest.raises(RenderError, match="timed out"):
+        render_vertical(src, start=0.0, end=1.0, out=out)
+    assert not out.exists()
 
 
 def test_extract_cover_rejects_out_equal_to_video(src: Path) -> None:
