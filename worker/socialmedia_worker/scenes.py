@@ -4,6 +4,8 @@ import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
+from socialmedia_worker.validate import MediaRejectedError, validate_media
+
 
 class FfmpegNotFoundError(RuntimeError):
     """ffmpeg is not on PATH."""
@@ -24,6 +26,9 @@ def detect_scenes(path: Path, threshold: float = 0.3) -> list[SceneCut]:
     ffmpeg = shutil.which("ffmpeg")
     if ffmpeg is None:
         raise FfmpegNotFoundError("ffmpeg not found on PATH; install FFmpeg (ffmpeg.org)")
+    # Limits and allowed containers apply before ffmpeg decodes (Codex review #10).
+    if validate_media(path).kind != "video":
+        raise MediaRejectedError("unsupported_format", f"{path.name}: not a video")
     proc = subprocess.run(
         [ffmpeg, "-hide_banner", "-nostdin", "-v", "info", "-i", str(path), "-map", "0:v:0",
          "-vf", f"select='gt(scene,{threshold})',metadata=print,showinfo",

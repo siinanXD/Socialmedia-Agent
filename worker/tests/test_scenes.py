@@ -74,3 +74,13 @@ def test_to_segments_is_gapless_from_zero_to_duration() -> None:
 def test_to_segments_ignores_cuts_outside_the_clip_and_duplicates() -> None:
     cuts = [SceneCut(6.0, 0.5), SceneCut(0.0, 0.9), SceneCut(6.0, 0.4), SceneCut(12.0, 0.7)]
     assert to_segments(cuts, 10.0) == [(0.0, 6.0), (6.0, 10.0)]
+
+
+def test_detect_scenes_validates_the_source_first(tmp_path: Path) -> None:
+    # Codex review #10: limits and allowed containers apply before ffmpeg decodes.
+    from socialmedia_worker.validate import MediaRejectedError
+
+    mkv = tmp_path / "src.mkv"
+    _ffmpeg("-f", "lavfi", "-i", "testsrc=duration=1:size=320x240:rate=25", str(mkv))
+    with pytest.raises(MediaRejectedError, match="format_not_allowed"):
+        detect_scenes(mkv)
