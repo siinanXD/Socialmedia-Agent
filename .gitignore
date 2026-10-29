@@ -27,3 +27,5 @@ tmp/
 *.sqlite3
 *.db
 # Keep fixtures via explicit exception after rights review
+*.tsbuildinfo
+next-env.d.ts
