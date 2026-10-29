@@ -53,6 +53,6 @@ extract_cover(result.path, at=1.0, out=Path("cover.jpg"))  # ein JPEG-Frame, gep
 `ValueError` bei ungueltigem Zeitbereich (`0 <= start < end <= Dauer`, Cover `0 <= at < Dauer`) oder `out == src`;
 `FileExistsError`, wenn `out` schon existiert (nichts wird ueberschrieben); `FfmpegNotFoundError` ohne ffmpeg;
 `RenderError` bei ffmpeg-Exit != 0, leerer Ausgabe oder Timeout (600 s Render, 60 s Cover; unvollstaendige Ausgabe wird
-geloescht). Quellen ohne Audio werden ohne Tonspur gerendert. Kein Subjekt-Tracking, keine Untertitel, keine Musik, keine Varianten.
+geloescht). Vor dem Rendern prueft `validate_media` die Quelle (Container, Groesse, Dauer, Aufloesung; sonst `MediaRejectedError`); geschrieben wird in eine Temp-Datei, die erst nach der Pruefung als `out` erscheint. Quellen ohne Audio werden ohne Tonspur gerendert. Kein Subjekt-Tracking, keine Untertitel, keine Musik, keine Varianten.
 
 Medien-Validierung: `validate_media(path, limits)` (`validate.py`) prueft eine Quelldatei vor jeder Verarbeitung nach Inhalt (ffprobe, nicht Dateiendung): Format-Allowlist (MP4/MOV, JPEG/PNG), Groesse (`MAX_UPLOAD_MB`, Standard 500), Dauer (Standard 30 min), Aufloesung (Standard 8K), liefert `kind`, Container, Codec, Masse, Dauer und SHA-256. Verstoss -> `MediaRejectedError` mit `reason`-Code. Die Datei wird nur gelesen. Teilstand: nur Worker-seitige Pruefung, kein Upload, kein Virenscan, keine Quota; eine abgeschnittene Datei mit Index am Dateianfang wird nicht erkannt.
