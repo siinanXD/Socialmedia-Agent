@@ -191,7 +191,11 @@ def test_extract_cover_deletes_output_that_is_not_an_image(
 ) -> None:
     import socialmedia_worker.render as render
 
+    real_validate = validate_media
+
     def broken(path: Path, limits: object = None) -> object:
+        if path.suffix != ".jpg":  # the source is still checked for real
+            return real_validate(path)
         raise MediaRejectedError("unsupported_format", f"{path.name}: not a supported media file")
 
     monkeypatch.setattr(render, "validate_media", broken)
@@ -204,3 +208,92 @@ def test_extract_cover_deletes_output_that_is_not_an_image(
 def test_extract_cover_rejects_out_equal_to_video(src: Path) -> None:
     with pytest.raises(ValueError, match="video"):
         extract_cover(src, at=1.0, out=src)
+
+
+def test_source_is_validated_before_processing(tmp_path: Path) -> None:
+    # Codex review #10 (P1): limits and allowed containers must apply before ffmpeg decodes.
+    mkv = tmp_path / "src.mkv"
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-f",
+            "lavfi",
+            "-i",
+            "testsrc=duration=2:size=320x240:rate=25",
+            str(mkv),
+        ],
+        check=True,
+    )
+    with pytest.raises(MediaRejectedError, match="format_not_allowed"):
+        render_vertical(mkv, start=0.0, end=1.0, out=tmp_path / "out.mp4")
+    with pytest.raises(MediaRejectedError, match="format_not_allowed"):
+        extract_cover(mkv, at=1.0, out=tmp_path / "cover.jpg")
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["src.mkv"]
+
+
+def test_concurrent_render_keeps_the_other_output(
+    src: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Codex review #10 (P1): the call that loses the race must not delete the winner's file.
+    real_run = subprocess.run
+    out = tmp_path / "out.mp4"
+
+    def other_wins(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
+        result: subprocess.CompletedProcess[str] = real_run(cmd, **kwargs)  # type: ignore[call-overload]
+        if Path(cmd[0]).stem == "ffmpeg":
+            out.write_bytes(b"other invocation")
+        return result
+
+    monkeypatch.setattr("socialmedia_worker.render.subprocess.run", other_wins)
+    with pytest.raises(FileExistsError):
+        render_vertical(src, start=0.0, end=1.0, out=out)
+    assert out.read_bytes() == b"other invocation"
+    assert [p.name for p in tmp_path.iterdir()] == ["out.mp4"]
+
+
+def _gray(path: Path) -> bytes:
+    return subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-i",
+            str(path),
+            "-frames:v",
+            "1",
+            "-vf",
+            "scale=27:48",
+            "-f",
+            "rawvideo",
+            "-pix_fmt",
+            "gray",
+            "-",
+        ],
+        capture_output=True,
+        check=True,
+    ).stdout
+
+
+def test_render_vertical_keeps_display_proportions_of_non_square_pixels(tmp_path: Path) -> None:
+    # Codex review #10 (P2): a 2:1 SAR source must render like its square-pixel equivalent.
+    square = tmp_path / "square.mp4"
+    anamorph = tmp_path / "anamorph.mp4"
+    base = [
+        "ffmpeg",
+        "-v",
+        "error",
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc2=duration=1:size=640x360:rate=25",
+    ]
+    subprocess.run([*base, "-pix_fmt", "yuv420p", str(square)], check=True)
+    subprocess.run(
+        [*base, "-vf", "scale=320:360,setsar=2", "-pix_fmt", "yuv420p", str(anamorph)], check=True
+    )
+    a = _gray(render_vertical(square, 0.0, 0.5, tmp_path / "a.mp4").path)
+    b = _gray(render_vertical(anamorph, 0.0, 0.5, tmp_path / "b.mp4").path)
+    diff = sum(abs(x - y) for x, y in zip(a, b, strict=True)) / len(a)
+    assert diff < 12, f"mean gray difference {diff:.1f}"

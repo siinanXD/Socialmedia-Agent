@@ -1,5 +1,8 @@
+import os
 import shutil
 import subprocess
+import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -11,8 +14,10 @@ WIDTH, HEIGHT = 1080, 1920
 # generous for renders, short for a single frame.
 RENDER_TIMEOUT_S = 600
 COVER_TIMEOUT_S = 60
-# Centre crop: scale to cover 1080x1920, then crop the overflow.
+# Square pixels first (keeps display proportions of anamorphic sources, Codex #10),
+# then scale to cover 1080x1920 and crop the overflow.
 _VERTICAL_FILTER = (
+    "scale=trunc(iw*sar/2)*2:ih,setsar=1,"
     f"scale={WIDTH}:{HEIGHT}:force_original_aspect_ratio=increase,crop={WIDTH}:{HEIGHT},setsar=1"
 )
 
@@ -33,38 +38,57 @@ class RenderResult:
     height: int
 
 
-def _run_ffmpeg(args: list[str], out: Path, timeout: float) -> None:
+def _source_duration(src: Path) -> float:
+    """Validate src (container, size, duration, resolution) before ffmpeg touches it (Codex #10)."""
+    media = validate_media(src)
+    if media.kind != "video" or media.duration is None:
+        raise MediaRejectedError("unsupported_format", f"{src.name}: not a video")
+    return media.duration
+
+
+def _run_ffmpeg(
+    args: list[str], out: Path, timeout: float, verify: Callable[[Path], None] | None = None
+) -> None:
+    """Render into a file of this call only, then publish it to out without overwriting anything."""
     ffmpeg = shutil.which("ffmpeg")
     if ffmpeg is None:
         raise FfmpegNotFoundError("ffmpeg not found on PATH; install FFmpeg (ffmpeg.org)")
+    taken = f"{out} exists; refusing to overwrite (originals and earlier renders stay immutable)"
     if out.exists():
-        raise FileExistsError(
-            f"{out} exists; refusing to overwrite (originals and earlier renders stay immutable)"
-        )
+        raise FileExistsError(taken)
+    tmp = out.with_name(f".{out.stem}.{uuid.uuid4().hex}{out.suffix}")
     try:
-        proc = subprocess.run(
-            [ffmpeg, "-v", "error", "-nostdin", "-n", *args, str(out)],
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
-    except subprocess.TimeoutExpired as exc:
-        out.unlink(missing_ok=True)
-        raise RenderError(f"ffmpeg timed out after {timeout:.0f}s") from exc
-    if proc.returncode != 0:
-        out.unlink(missing_ok=True)
-        tail = "\n".join(proc.stderr.strip().splitlines()[-5:])
-        raise RenderError(f"ffmpeg failed with exit code {proc.returncode}: {tail}")
-    if not out.exists() or out.stat().st_size == 0:
-        out.unlink(missing_ok=True)
-        raise RenderError("ffmpeg exited 0 but wrote no output")
+        try:
+            proc = subprocess.run(
+                [ffmpeg, "-v", "error", "-nostdin", "-n", *args, str(tmp)],
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise RenderError(f"ffmpeg timed out after {timeout:.0f}s") from exc
+        if proc.returncode != 0:
+            tail = "\n".join(proc.stderr.strip().splitlines()[-5:])
+            raise RenderError(f"ffmpeg failed with exit code {proc.returncode}: {tail}")
+        if not tmp.exists() or tmp.stat().st_size == 0:
+            raise RenderError("ffmpeg exited 0 but wrote no output")
+        if verify is not None:
+            verify(tmp)
+        # Claim out exclusively; a concurrent call that got there first keeps its file.
+        try:
+            os.close(os.open(out, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+        except FileExistsError as exc:
+            raise FileExistsError(taken) from exc
+        os.replace(tmp, out)
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def render_vertical(src: Path, start: float, end: float, out: Path) -> RenderResult:
     """Render src[start:end] as a 1080x1920 H.264/AAC MP4 (centre crop). src is never modified."""
     if out.resolve() == src.resolve():
         raise ValueError("out must differ from src; the original is never overwritten")
-    duration = probe(src).duration
+    duration = _source_duration(src)
     if not 0 <= start < end <= duration:
         raise ValueError(
             f"invalid range: need 0 <= start < end <= {duration:.2f}s, got {start}..{end}"
@@ -103,18 +127,23 @@ def extract_cover(video: Path, at: float, out: Path) -> Path:
     """Write the frame of video at `at` seconds as a JPEG to out; verify it is a readable image."""
     if out.resolve() == video.resolve():
         raise ValueError("out must differ from video; the original is never overwritten")
-    duration = probe(video).duration
+    duration = _source_duration(video)
     # `at == duration` lies after the last frame: ffmpeg exits 0 without an image.
     if not 0 <= at < duration:
         raise ValueError(f"invalid at: need 0 <= at < {duration:.2f}s, got {at}")
     _run_ffmpeg(
-        ["-ss", str(at), "-i", str(video), "-frames:v", "1", "-q:v", "2"], out, COVER_TIMEOUT_S
+        ["-ss", str(at), "-i", str(video), "-frames:v", "1", "-q:v", "2"],
+        out,
+        COVER_TIMEOUT_S,
+        _check_cover,
     )
+    return out
+
+
+def _check_cover(path: Path) -> None:
     # An image has no duration: check it as an image (SIN-1173), not with probe() (Codex P1).
     try:
-        if validate_media(out).kind != "image":
-            raise MediaRejectedError("unsupported_format", f"{out.name}: not an image")
+        if validate_media(path).kind != "image":
+            raise MediaRejectedError("unsupported_format", f"{path.name}: not an image")
     except MediaRejectedError as exc:
-        out.unlink(missing_ok=True)
         raise RenderError(f"cover is not a readable image: {exc}") from exc
-    return out
