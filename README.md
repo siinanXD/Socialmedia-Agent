@@ -15,6 +15,17 @@ Upload multiple raw videos and photos or import a watched folder; identify promi
 
 See `docs/` and `AGENTS.md` in the planning pull request for architecture, phased roadmap, contracts, acceptance criteria and implementation guidance.
 
+## App lokal
+Voraussetzung: Node 22 (wie in `build.yml`).
+
+```
+npm ci
+npm run dev        # http://localhost:3000, GET /api/health -> {"status":"ok"}
+npm run typecheck && npm test && npm run build
+```
+
+Stand: nur Next.js-Gerüst (App Router, TypeScript strict, Vitest) mit Startseite und `GET /api/health`. Keine Funktion, keine Auth, kein Supabase-Client, kein Upload, kein Deployment.
+
 ## Worker lokal
 Voraussetzungen: [uv](https://docs.astral.sh/uv/) und FFmpeg (`ffmpeg`/`ffprobe` im PATH).
 

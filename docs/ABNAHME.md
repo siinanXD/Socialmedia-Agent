@@ -3,7 +3,7 @@
 | Gate | Test / evidence | Status |
 | --- | --- | --- |
 | Repository | README, AGENTS, architecture, roadmap and license decision | Planning |
-| Setup | Fresh clone installs and starts on supported environment | Partial: `worker/` installs and tests with `uv sync && uv run pytest` (SIN-1139); app, database and end-to-end start not implemented |
+| Setup | Fresh clone installs and starts on supported environment | Partial: `worker/` installs and tests with `uv sync && uv run pytest` (SIN-1139); Next.js scaffold starts with `npm run dev` and serves `GET /api/health` (SIN-1174), no app function; database and end-to-end start not implemented |
 | Upload | Batch of >=2 videos plus >=1 image, validates type/size and ownership | Partial: worker-side type/size/duration/SHA-256 check only (SIN-1173); no upload, ownership, virus scan or quota |
 | Highlights | JSON with asset ID, start/end, confidence and rationale; editable | Not implemented (Teilschritt: Szenenerkennung `detect_scenes`/`to_segments` im Worker, SIN-1165; keine Auswahl, keine Begründung, kein Manifest) |
 | Render | >=2 playable 9:16 drafts with subtitles, cover and caption; inspect actual output | Not implemented (building block `render_vertical`/`extract_cover` exists in `worker/`, SIN-1166: 9:16 cut and cover only; no subtitles, caption, variants or pipeline integration) |
