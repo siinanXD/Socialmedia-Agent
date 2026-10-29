@@ -25,6 +25,9 @@ Reason = Literal[
 ]
 
 _IMAGE_FORMATS = {"jpeg_pipe", "png_pipe"}
+# ffprobe names a .jpg/.png file "image2" once it is larger than a thumbnail (seen from 320x240);
+# the codec says what it really is (SIN-1166, found with a real 1280x720 cover).
+_IMAGE2_CODECS = {"mjpeg": "jpeg_pipe", "png": "png_pipe"}
 # First bytes of formats we can recognise as "meant to be media, but broken" (vs. random data).
 _MP4_BOX_TYPES = {b"ftyp", b"moov", b"mdat", b"free", b"wide", b"skip"}
 _IMAGE_MAGIC = (b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n")
@@ -119,9 +122,11 @@ def validate_media(path: Path, limits: MediaLimits | None = None) -> ValidatedMe
         raise MediaRejectedError("unsupported_format", f"{path.name}: not a supported media file")
 
     container = str(data["format"]["format_name"])
+    stream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
+    if container == "image2" and stream is not None:
+        container = _IMAGE2_CODECS.get(str(stream["codec_name"]), container)
     if not set(container.split(",")) & limits.allowed_formats:
         raise MediaRejectedError("format_not_allowed", f"{path.name}: {container}")
-    stream = next((s for s in data["streams"] if s["codec_type"] == "video"), None)
     if stream is None:
         raise MediaRejectedError("no_video_stream", f"{path.name}: no video stream")
 

@@ -12,6 +12,7 @@ from socialmedia_worker.render import (
     extract_cover,
     render_vertical,
 )
+from socialmedia_worker.validate import MediaRejectedError, validate_media
 
 
 def _make_source(path: Path, *, audio: bool) -> Path:
@@ -153,12 +154,50 @@ def test_render_timeout_is_reported_and_leaves_no_output(
     def hang(cmd: list[str], **kwargs: object) -> subprocess.CompletedProcess[str]:
         if Path(cmd[0]).stem == "ffmpeg":
             raise subprocess.TimeoutExpired(cmd, 1.0)
-        return real_run(cmd, **kwargs)  # type: ignore[call-overload]
+        result: subprocess.CompletedProcess[str] = real_run(cmd, **kwargs)  # type: ignore[call-overload]
+        return result
 
     monkeypatch.setattr("socialmedia_worker.render.subprocess.run", hang)
     out = tmp_path / "out.mp4"
     with pytest.raises(RenderError, match="timed out"):
         render_vertical(src, start=0.0, end=1.0, out=out)
+    assert not out.exists()
+
+
+def test_extract_cover_accepts_jpeg_without_duration(
+    src: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Codex review SIN-1166 (P1): some ffprobe builds report a JPEG without format.duration;
+    # probe() then raises. The cover must be checked as an image, not as a video.
+    import socialmedia_worker.render as render
+
+    real_probe = probe
+
+    def video_only(path: Path) -> object:
+        if path.suffix == ".jpg":
+            raise ValueError(f"{path.name}: not a readable video (no duration)")
+        return real_probe(path)
+
+    monkeypatch.setattr(render, "probe", video_only)
+    out = tmp_path / "cover.jpg"
+    assert extract_cover(src, at=1.5, out=out) == out
+    media = validate_media(out)
+    assert (media.kind, media.width, media.height) == ("image", 1280, 720)
+    assert media.duration is None
+
+
+def test_extract_cover_deletes_output_that_is_not_an_image(
+    src: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import socialmedia_worker.render as render
+
+    def broken(path: Path, limits: object = None) -> object:
+        raise MediaRejectedError("unsupported_format", f"{path.name}: not a supported media file")
+
+    monkeypatch.setattr(render, "validate_media", broken)
+    out = tmp_path / "cover.jpg"
+    with pytest.raises(RenderError, match="not a readable image"):
+        extract_cover(src, at=1.5, out=out)
     assert not out.exists()
 
 

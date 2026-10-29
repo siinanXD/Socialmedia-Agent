@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from socialmedia_worker.probe import probe
+from socialmedia_worker.validate import MediaRejectedError, validate_media
 
 WIDTH, HEIGHT = 1080, 1920
 # A hung ffmpeg must not block the worker (Codex review SIN-1166):
@@ -99,7 +100,7 @@ def render_vertical(src: Path, start: float, end: float, out: Path) -> RenderRes
 
 
 def extract_cover(video: Path, at: float, out: Path) -> Path:
-    """Write the frame of video at `at` seconds as a JPEG to out and verify it is readable."""
+    """Write the frame of video at `at` seconds as a JPEG to out; verify it is a readable image."""
     if out.resolve() == video.resolve():
         raise ValueError("out must differ from video; the original is never overwritten")
     duration = probe(video).duration
@@ -109,9 +110,11 @@ def extract_cover(video: Path, at: float, out: Path) -> Path:
     _run_ffmpeg(
         ["-ss", str(at), "-i", str(video), "-frames:v", "1", "-q:v", "2"], out, COVER_TIMEOUT_S
     )
+    # An image has no duration: check it as an image (SIN-1173), not with probe() (Codex P1).
     try:
-        probe(out)
-    except ValueError as exc:
+        if validate_media(out).kind != "image":
+            raise MediaRejectedError("unsupported_format", f"{out.name}: not an image")
+    except MediaRejectedError as exc:
         out.unlink(missing_ok=True)
         raise RenderError(f"cover is not a readable image: {exc}") from exc
     return out
