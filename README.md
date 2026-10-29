@@ -23,6 +23,18 @@ cd worker && uv sync && uv run pytest
 uv run ruff check . && uv run mypy .
 ```
 
-Stand: `worker/` enthaelt nur `probe(path)` (Dauer, Breite, Hoehe per ffprobe). Keine Queue, kein Upload, kein Rendering.
+Stand: `worker/` enthaelt `probe(path)` (Dauer, Breite, Hoehe per ffprobe), die Medien-Validierung (SIN-1173) und die Szenenerkennung (SIN-1165):
+
+```python
+from pathlib import Path
+from socialmedia_worker.probe import probe
+from socialmedia_worker.scenes import detect_scenes, to_segments
+
+path = Path("clip.mp4")
+cuts = detect_scenes(path, threshold=0.3)       # [SceneCut(time=1.0, score=0.69)]
+segments = to_segments(cuts, probe(path).duration)  # [(0.0, 1.0), (1.0, 2.0)]
+```
+
+`detect_scenes` ruft `ffmpeg` (scene-Filter) als Subprozess auf. Bewiesen ist es nur an einem zur Laufzeit erzeugten Testclip mit einem harten Schnitt (`worker/tests/test_scenes.py`); wie gut die Erkennung auf echtem Material und mit dem Schwellwert 0,3 arbeitet, ist nicht gemessen. Keine Highlight-Bewertung, keine Queue, kein Upload, kein Rendering.
 
 Medien-Validierung: `validate_media(path, limits)` (`validate.py`) prueft eine Quelldatei vor jeder Verarbeitung nach Inhalt (ffprobe, nicht Dateiendung): Format-Allowlist (MP4/MOV, JPEG/PNG), Groesse (`MAX_UPLOAD_MB`, Standard 500), Dauer (Standard 30 min), Aufloesung (Standard 8K), liefert `kind`, Container, Codec, Masse, Dauer und SHA-256. Verstoss -> `MediaRejectedError` mit `reason`-Code. Die Datei wird nur gelesen. Teilstand: nur Worker-seitige Pruefung, kein Upload, kein Virenscan, keine Quota; eine abgeschnittene Datei mit Index am Dateianfang wird nicht erkannt.
