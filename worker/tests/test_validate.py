@@ -107,3 +107,13 @@ def test_reports_missing_ffprobe(video: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr("shutil.which", lambda _name: None)
     with pytest.raises(FfprobeNotFoundError, match="ffprobe"):
         validate_media(video)
+
+
+@pytest.mark.parametrize("suffix", ["jpg", "png"])
+def test_full_size_image_files_are_accepted(tmp_path: Path, suffix: str) -> None:
+    # Small images probe as jpeg_pipe/png_pipe, real-size .jpg files as "image2" (SIN-1166).
+    path = tmp_path / f"foto.{suffix}"
+    _ffmpeg("-f", "lavfi", "-i", "testsrc=size=1280x720", "-frames:v", "1", str(path))
+    result = validate_media(path)
+    assert (result.kind, result.width, result.height, result.duration) == ("image", 1280, 720, None)
+    assert result.container in {"jpeg_pipe", "png_pipe"}
