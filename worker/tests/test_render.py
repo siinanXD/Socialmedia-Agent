@@ -297,3 +297,20 @@ def test_render_vertical_keeps_display_proportions_of_non_square_pixels(tmp_path
     b = _gray(render_vertical(anamorph, 0.0, 0.5, tmp_path / "b.mp4").path)
     diff = sum(abs(x - y) for x, y in zip(a, b, strict=True)) / len(a)
     assert diff < 12, f"mean gray difference {diff:.1f}"
+
+
+def test_render_without_video_frames_leaves_no_output(tmp_path: Path) -> None:
+    # Codex review #10: a range in the audio tail after the last frame must not publish a file.
+    src = tmp_path / "tail.mp4"
+    video = "testsrc=duration=2:size=320x240:rate=25"
+    audio = "sine=frequency=440:duration=4"
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-f", "lavfi", "-i", video, "-f", "lavfi", "-i", audio,
+         "-c:a", "aac", "-pix_fmt", "yuv420p", str(src)],
+        check=True,
+    )  # fmt: skip
+    out = tmp_path / "out.mp4"
+    with pytest.raises(RenderError):
+        render_vertical(src, start=3.0, end=4.0, out=out)
+    assert not out.exists()
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["tail.mp4"]

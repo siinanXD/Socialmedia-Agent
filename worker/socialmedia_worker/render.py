@@ -6,7 +6,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from socialmedia_worker.probe import probe
+from socialmedia_worker.probe import ProbeResult, probe
 from socialmedia_worker.validate import MediaRejectedError, validate_media
 
 WIDTH, HEIGHT = 1080, 1920
@@ -93,6 +93,7 @@ def render_vertical(src: Path, start: float, end: float, out: Path) -> RenderRes
         raise ValueError(
             f"invalid range: need 0 <= start < end <= {duration:.2f}s, got {start}..{end}"
         )
+    checked: list[ProbeResult] = []
     _run_ffmpeg(
         [
             "-ss",
@@ -118,9 +119,18 @@ def render_vertical(src: Path, start: float, end: float, out: Path) -> RenderRes
         ],
         out,
         RENDER_TIMEOUT_S,
+        lambda path: checked.append(_check_render(path)),
     )
-    info = probe(out)
+    info = checked[0]
     return RenderResult(out, info.duration, info.width, info.height)
+
+
+def _check_render(path: Path) -> ProbeResult:
+    # Check before publishing (Codex #10): e.g. a range in the audio tail yields no video frames.
+    try:
+        return probe(path)
+    except ValueError as exc:
+        raise RenderError(f"render is not a readable video: {exc}") from exc
 
 
 def extract_cover(video: Path, at: float, out: Path) -> Path:
