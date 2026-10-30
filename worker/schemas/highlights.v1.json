@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Highlight manifest v1",
+  "description": "confidence is a heuristic score (0..1) derived from a per-segment signal, not a prediction of reach or virality.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "asset_id", "highlights"],
+  "properties": {
+    "version": {"const": 1},
+    "asset_id": {"type": "string", "minLength": 1},
+    "highlights": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["asset_id", "start", "end", "confidence", "rationale", "pipeline_version"],
+        "properties": {
+          "asset_id": {"type": "string", "minLength": 1},
+          "start": {"type": "number", "minimum": 0},
+          "end": {"type": "number", "exclusiveMinimum": 0},
+          "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+          "rationale": {"type": "string", "minLength": 1},
+          "pipeline_version": {"type": "string", "minLength": 1}
+        }
+      }
+    }
+  }
+}

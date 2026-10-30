@@ -58,7 +58,17 @@ cuts = detect_scenes(path, threshold=0.3)       # [SceneCut(time=1.0, score=0.69
 segments = to_segments(cuts, probe(path).duration)  # [(0.0, 1.0), (1.0, 2.0)]
 ```
 
-`detect_scenes` ruft `ffmpeg` (scene-Filter) als Subprozess auf. Bewiesen ist es nur an einem zur Laufzeit erzeugten Testclip mit einem harten Schnitt (`worker/tests/test_scenes.py`); wie gut die Erkennung auf echtem Material und mit dem Schwellwert 0,3 arbeitet, ist nicht gemessen. Keine Highlight-Bewertung.
+`detect_scenes` ruft `ffmpeg` (scene-Filter) als Subprozess auf. Bewiesen ist es nur an einem zur Laufzeit erzeugten Testclip mit einem harten Schnitt (`worker/tests/test_scenes.py`); wie gut die Erkennung auf echtem Material und mit dem Schwellwert 0,3 arbeitet, ist nicht gemessen. 
+Highlight-Auswahl (deterministisch, ohne Modell):
+
+```python
+from socialmedia_worker.highlights import select_highlights
+
+manifest = select_highlights("asset-1", segments, signals, min_len=3.0, max_len=30.0, top_n=3)
+print(manifest.to_json())  # validiert gegen worker/schemas/highlights.v1.json
+```
+
+`signals` hat einen Wert je Segment (z. B. Bewegung, 0..1). Segmente unter `min_len` entfallen, längere werden auf die ersten `max_len` Sekunden gekürzt. `confidence` ist eine Heuristik (das begrenzte Signal), keine Aussage über Reichweite oder Viralität. Das Signal selbst wird noch nicht aus ffmpeg berechnet; es gibt keine menschliche Korrektur.
 
 Render-Baustein (`socialmedia_worker.render`, FFmpeg per Subprozess ohne Shell):
 
