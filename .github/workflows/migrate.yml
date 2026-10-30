@@ -1,0 +1,55 @@
+name: migrate
+
+# SIN-1196: Nach Merge auf main spielt dieser Workflow neue Migrationen aus supabase/migrations ins gemeinsame
+# Supabase-Projekt ein. Bewusst kein `supabase db push`: das Projekt hat auch die Migrationen anderer Apps in
+# supabase_migrations.schema_migrations und push bricht bei Versionen ab, die lokal fehlen.
+# Stattdessen: nur Dateien, deren Version dort fehlt, je Datei in einer Transaktion samt Eintrag. Kein db reset, kein drop schema.
+# Secret SOCIALMEDIA_DATABASE_URL legt Sinan an (Session-Pooler-URL einer Rolle, die nur Schema social_media ändern darf, siehe README.md (Abschnitt Live testen)).
+on:
+  push:
+    branches: [main]
+    paths: [supabase/migrations/**]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrate-socialmedia
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Nur Schema social_media
+        run: node scripts/check-migration-schemas.mjs supabase/migrations
+
+      - name: Neue Migrationen einspielen
+        env:
+          DATABASE_URL: ${{ secrets.SOCIALMEDIA_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DATABASE_URL" ]; then
+            echo '::error::Secret SOCIALMEDIA_DATABASE_URL fehlt (legt Sinan an, siehe README.md (Abschnitt Live testen)).'
+            exit 1
+          fi
+          for file in supabase/migrations/*.sql; do
+            base=$(basename "$file" .sql)
+            version=${base%%_*}
+            name=${base#*_}
+            applied=$(psql "$DATABASE_URL" -Atc "select 1 from supabase_migrations.schema_migrations where version = '$version'")
+            if [ -n "$applied" ]; then
+              echo "schon eingespielt: $base"
+              continue
+            fi
+            echo "spiele ein: $base"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 --single-transaction \
+              -f "$file" \
+              -c "insert into supabase_migrations.schema_migrations (version, name) values ('$version', '$name')"
+          done

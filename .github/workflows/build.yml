@@ -61,6 +61,10 @@ jobs:
           uv run mypy .
           uv run pytest
 
+      - name: Migrationen nur im Schema social_media (SIN-1196)
+        if: hashFiles('supabase/migrations/*.sql') != ''
+        run: node scripts/check-migration-schemas.mjs supabase/migrations
+
       - if: hashFiles('supabase/config.toml') != ''
         uses: supabase/setup-cli@v1
         with:
