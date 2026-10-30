@@ -68,7 +68,20 @@ manifest = select_highlights("asset-1", segments, signals, min_len=3.0, max_len=
 print(manifest.to_json())  # validiert gegen worker/schemas/highlights.v1.json
 ```
 
-`signals` hat einen Wert je Segment (z. B. Bewegung, 0..1). Segmente unter `min_len` entfallen, längere werden auf die ersten `max_len` Sekunden gekürzt. `confidence` ist eine Heuristik (das begrenzte Signal), keine Aussage über Reichweite oder Viralität. Das Signal selbst wird noch nicht aus ffmpeg berechnet; es gibt keine menschliche Korrektur.
+`signals` hat einen Wert je Segment (z. B. Bewegung, 0..1). Segmente unter `min_len` entfallen, längere werden auf die ersten `max_len` Sekunden gekürzt. `confidence` ist eine Heuristik (das begrenzte Signal), keine Aussage über Reichweite oder Viralität. Es gibt keine menschliche Korrektur.
+
+Segment-Signale und Bildqualität (nur FFmpeg-Filter, kein Modell, keine neue Abhängigkeit):
+
+```python
+from socialmedia_worker.signals import segment_signals
+from socialmedia_worker.quality import image_quality
+
+signals = segment_signals(path, segments)  # [SegmentSignal(start, end, motion, loudness)]
+motion = [s.motion for s in signals]       # Eingabe für select_highlights
+q = image_quality(Path("foto.jpg"))        # Quality(sharpness, exposure, reasons=["unscharf"])
+```
+
+`motion` (0..1): mittlere Luma-Änderung zwischen Frames (`signalstats` YDIF), geteilt durch 20, begrenzt auf 1. `loudness` (0..1): `volumedetect`-Mittelpegel, linear von -60 dBFS (0) bis 0 dBFS (1); ein Video ohne Tonspur liefert `None`, eine stumme Spur 0. `image_quality` liefert `sharpness` (Kantendichte nach `edgedetect`), `exposure` (Abstand der mittleren Helligkeit von Mittelgrau) und `reasons` ("unscharf", "unterbelichtet", "überbelichtet"); es gilt für JPEG/PNG und für einen mit `extract_cover` gezogenen Frame. Beide prüfen die Quelle vorher mit `validate_media`. Teilstand: reine Heuristik, nur an zur Laufzeit erzeugten Testclips und -bildern belegt (`worker/tests/test_signals.py`, `test_quality.py`); die Skalen sind nicht an echtem Material kalibriert (ein scharfes, aber flächiges Bild kann als „unscharf“ gelten), und es gibt keine Aussage über Reichweite oder Viralität. Noch nicht angebunden: kein Job, der Signale berechnet und an `select_highlights` übergibt.
 
 Render-Baustein (`socialmedia_worker.render`, FFmpeg per Subprozess ohne Shell):
 
