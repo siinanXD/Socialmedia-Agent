@@ -36,6 +36,16 @@ uv run ruff check . && uv run mypy .
 
 Stand: `worker/` enthaelt `probe(path)` (Dauer, Breite, Hoehe per ffprobe), die Medien-Validierung (SIN-1173), die Szenenerkennung (SIN-1165) und den Render-Baustein (SIN-1166). Keine Queue, kein Upload.
 
+## Datenbank lokal
+Voraussetzungen: Docker und die [Supabase CLI](https://supabase.com/docs/guides/local-development).
+
+```
+supabase db start   # wendet supabase/migrations auf eine lokale Datenbank an
+supabase test db    # pgTAP-Tests aus supabase/tests
+```
+
+Stand: Schema `social_media` mit `creators`, `assets`, `jobs` und RLS über `creator_id` (SIN-1168). Kein Storage-Bucket, keine Anbindung der App. Läuft lokal schon ein anderes Supabase-Projekt auf Port 54322, dort `supabase stop` oder den Port in `supabase/config.toml` für den Lauf ändern.
+
 Szenenerkennung:
 
 ```python
