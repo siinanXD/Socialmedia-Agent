@@ -23,15 +23,17 @@ Jeder PR bekommt von Vercel eine Preview-URL (Kommentar des Vercel-Bots im PR); 
 - Neue Migrationen spielt `.github/workflows/migrate.yml` nach Merge auf `main` ein. Einmalig legt Sinan das GitHub-Secret `SOCIALMEDIA_DATABASE_URL` an: Session-Pooler-URL (GitHub-Runner haben kein IPv6) einer eigenen Rolle, die nur das Schema `social_media` besitzt, `references` auf `auth.users` hat und in `supabase_migrations.schema_migrations` einfügen darf. Ohne Secret schlägt der Workflow sichtbar fehl.
 
 ## App lokal
-Voraussetzung: Node 22 (wie in `build.yml`).
+Voraussetzung: Node 22 (wie in `build.yml`); für die Anmeldung zusätzlich Docker und die Supabase CLI (siehe „Datenbank lokal“).
 
 ```
+supabase start                      # lokale Supabase; `supabase status` zeigt API URL und anon key
+cp .env.example .env.local          # NEXT_PUBLIC_SUPABASE_URL und NEXT_PUBLIC_SUPABASE_ANON_KEY eintragen
 npm ci
-npm run dev        # http://localhost:3000, GET /api/health -> {"status":"ok"}
+npm run dev                         # http://localhost:3000 -> Weiterleitung auf /login
 npm run typecheck && npm test && npm run build
 ```
 
-Stand: nur Next.js-Gerüst (App Router, TypeScript strict, Vitest) mit Startseite und `GET /api/health`. Keine Funktion, keine Auth, kein Supabase-Client, kein Upload, kein Deployment.
+Stand: Anmeldung mit Supabase Auth (SIN-1377): Registrierung (`/registrieren`), Login (`/login`), Abmelden, alle anderen Routen nur mit Session (`proxy.ts`; `/api/health` bleibt offen). Beim ersten Aufruf von `/` nach der Anmeldung legt `ensureCreator()` die Zeile in `social_media.creators` an (idempotent, unter RLS). In der App steckt nur der öffentliche anon-Schlüssel, kein Service-Role-Schlüssel. Sonst weiter nur Gerüst: kein Upload, keine Medienfunktion, kein Deployment. Das lokale Supabase hat E-Mail-Bestätigung aus (`supabase/config.toml`); ist sie am Zielprojekt an, verweist die Registrierung auf `/login` mit Hinweis.
 
 ## Worker lokal
 Voraussetzungen: [uv](https://docs.astral.sh/uv/) und FFmpeg (`ffmpeg`/`ffprobe` im PATH).
