@@ -26,10 +26,10 @@ python3 -m socialmedia_worker export --out ~/leitstand-artefakte/pilot-2026-11-0
 | Varianten | variante-1.mp4 872 KB (clip-a 0,0–4,0 s), variante-2.mp4 3,08 MB (clip-b 0,0–4,0 s), je 1080×1920 H.264/AAC, Cover 49 KB und 185 KB |
 | Qualitätsprüfung | beide ok: 1080x1920, 4,0 s, Cover ok (`pruefung.json`) |
 | Checkpoints | Upload, Highlights, Videoschnitt, Qualitätsprüfung `fertig`; Freigabe `blockiert` (IDs 1–5 in Supabase) |
-| Export | wartet auf Freigabe (Exit 3 ohne Entscheidung, belegt im Test) |
+| Export | 4 Dateien unter `export/` plus `export.json`, Checkpoint 7 `fertig` (15:01 UTC); ohne Entscheidung Exit 3, gesehen am 02.11. auf dem Server |
 
 Lokal am PC: `uv run pytest` 84 Tests grün in 39 s, davon `test_pipeline.py` 5 Tests (Determinismus der Analyse, Originale byteidentisch, Export nur nach Freigabe, Exit-Codes).
 
 ## Nicht bewiesen
 
-Reichweite oder Qualität der Auswahl an echtem Material (Heuristik nicht kalibriert), Untertitel, Caption, Karussell, Upload über die App, Virenscan, Queue. Sinans Freigabe und der Export-Schritt stehen aus, bis er im Cockpit klickt.
+Reichweite oder Qualität der Auswahl an echtem Material (Heuristik nicht kalibriert), Untertitel, Caption, Karussell, Upload über die App, Virenscan, Queue. Die Freigabe dieses Laufs kam nicht per Klick zustande: Sinans Klick scheiterte an einem Cockpit-Fehler (`Origin: null`, 403; behoben in siinanXD/leitstand-2 PR 73), der Agent trug sie nach Sinans Aussage im Chat per curl nach (Checkpoint 6). Der Knopf selbst ist danach an einem Probelauf im Browser belegt, nicht an diesem Lauf.
