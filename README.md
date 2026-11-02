@@ -15,6 +15,13 @@ Upload multiple raw videos and photos or import a watched folder; identify promi
 
 See `docs/` and `AGENTS.md` in the planning pull request for architecture, phased roadmap, contracts, acceptance criteria and implementation guidance.
 
+## Live testen
+Jeder PR bekommt von Vercel eine Preview-URL (Kommentar des Vercel-Bots im PR); `main` geht nach Merge in Produktion (Vercel-Projekt `socialmedia-agent`, Hobby). Beide sind für das gemeinsame Supabase-Projekt vorgesehen, Daten liegen im Schema `social_media` (RLS).
+- Produktion: https://socialmedia-agent.vercel.app
+- Ablauf: URL öffnen → Startseite sehen → `/api/health` öffnen, Antwort `{"status":"ok"}`.
+- Testzugang: noch keiner nötig. Die App hat weder Login noch Supabase-Anbindung; sobald es eine Anmeldung gibt, gilt Sinans Testkonto (`TESTNUTZER_EMAIL` / `TESTNUTZER_PASSWORT` in Infisical `/leitstand`, das Passwort steht nie in Repo oder PR).
+- Neue Migrationen spielt `.github/workflows/migrate.yml` nach Merge auf `main` ein. Einmalig legt Sinan das GitHub-Secret `SOCIALMEDIA_DATABASE_URL` an: Session-Pooler-URL (GitHub-Runner haben kein IPv6) einer eigenen Rolle, die nur das Schema `social_media` besitzt, `references` auf `auth.users` hat und in `supabase_migrations.schema_migrations` einfügen darf. Ohne Secret schlägt der Workflow sichtbar fehl.
+
 ## App lokal
 Voraussetzung: Node 22 (wie in `build.yml`).
 
