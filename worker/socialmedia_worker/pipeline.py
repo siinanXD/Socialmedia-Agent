@@ -28,12 +28,36 @@ from socialmedia_worker.scenes import detect_scenes, to_segments
 from socialmedia_worker.signals import segment_signals
 from socialmedia_worker.validate import MediaLimits, MediaRejectedError, validate_media
 
-PIPELINE_VERSION = "pipeline-1"
+PIPELINE_VERSION = "pipeline-2"
 ANALYSIS_VERSION = 1
 AGENT = "socialmedia-worker (Python, deterministisch)"
 MIN_LEN = 2.0
 MAX_LEN = 30.0
 VARIANTEN = 2
+# shortcut: feste 6 s statt Inhaltserkennung, ersetzen, sobald echte Korrekturen vorliegen.
+FENSTER_S = 6.0
+
+
+def in_fenster(segmente: list[tuple[float, float]]) -> list[tuple[float, float]]:
+    """Teilt lange Segmente in Fenster: Eine durchgehende Aufnahme hat keine Schnitte."""
+    aus: list[tuple[float, float]] = []
+    for start, ende in segmente:
+        while ende - start >= FENSTER_S * 1.5:
+            aus.append((start, start + FENSTER_S))
+            start += FENSTER_S
+        aus.append((start, ende))
+    return aus
+
+
+def waehle_varianten(kandidaten: list[Highlight], anzahl: int) -> list[Highlight]:
+    """Erst das Beste je Asset, dann der Rest: Fenster derselben Aufnahme ähneln sich."""
+    gesehen: set[str] = set()
+    erste: list[Highlight] = []
+    rest: list[Highlight] = []
+    for h in kandidaten:
+        (rest if h.asset_id in gesehen else erste).append(h)
+        gesehen.add(h.asset_id)
+    return (erste + rest)[:anzahl]
 
 
 @dataclass(frozen=True)
@@ -119,7 +143,7 @@ def analyze_asset(
             PIPELINE_VERSION,
         )
     duration = media.duration or probe(path).duration
-    segments = to_segments(detect_scenes(path), duration)
+    segments = in_fenster(to_segments(detect_scenes(path), duration))
     signals = [s.motion for s in segment_signals(path, segments)]
     manifest = select_highlights(
         asset_id, segments, signals, MIN_LEN, min(MAX_LEN, duration), top_n
@@ -315,11 +339,11 @@ def run_batch(
         artefakte=artefakte,
     )
 
-    # 3 Videoschnitt: die besten zwei Highlights als 9:16 mit Cover.
+    # 3 Videoschnitt: die besten Highlights aus möglichst verschiedenen Assets als 9:16 mit Cover.
     t2 = time.perf_counter()
     varianten: list[Variante] = []
     quelle = {e["asset_id"]: e for e in eingaben}
-    for n, h in enumerate(kandidaten[:VARIANTEN], 1):
+    for n, h in enumerate(waehle_varianten(kandidaten, VARIANTEN), 1):
         name = f"variante-{n}"
         try:
             r = render_vertical(
