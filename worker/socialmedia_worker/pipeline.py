@@ -21,19 +21,19 @@ from typing import Any
 
 from socialmedia_worker.checkpoints import Artefakt, ArtefaktArt, Checkpoint, Reporter, Status
 from socialmedia_worker.highlights import Highlight, select_highlights
+from socialmedia_worker.post import LAUTHEIT_ZIEL, baue_storyboards, lautheit, render_post
 from socialmedia_worker.probe import probe
 from socialmedia_worker.quality import image_quality
-from socialmedia_worker.render import extract_cover, render_vertical
+from socialmedia_worker.render import extract_cover
 from socialmedia_worker.scenes import detect_scenes, to_segments
 from socialmedia_worker.signals import segment_signals
 from socialmedia_worker.validate import MediaLimits, MediaRejectedError, validate_media
 
-PIPELINE_VERSION = "pipeline-2"
+PIPELINE_VERSION = "pipeline-3"
 ANALYSIS_VERSION = 1
 AGENT = "socialmedia-worker (Python, deterministisch)"
 MIN_LEN = 2.0
 MAX_LEN = 30.0
-VARIANTEN = 2
 # shortcut: feste 6 s statt Inhaltserkennung, ersetzen, sobald echte Korrekturen vorliegen.
 FENSTER_S = 6.0
 
@@ -47,17 +47,6 @@ def in_fenster(segmente: list[tuple[float, float]]) -> list[tuple[float, float]]
             start += FENSTER_S
         aus.append((start, ende))
     return aus
-
-
-def waehle_varianten(kandidaten: list[Highlight], anzahl: int) -> list[Highlight]:
-    """Erst das Beste je Asset, dann der Rest: Fenster derselben Aufnahme ähneln sich."""
-    gesehen: set[str] = set()
-    erste: list[Highlight] = []
-    rest: list[Highlight] = []
-    for h in kandidaten:
-        (rest if h.asset_id in gesehen else erste).append(h)
-        gesehen.add(h.asset_id)
-    return (erste + rest)[:anzahl]
 
 
 @dataclass(frozen=True)
@@ -165,11 +154,9 @@ def analyze_asset(
 @dataclass(frozen=True)
 class Variante:
     name: str
-    asset_id: str
-    quelle: str
-    start: float
-    end: float
-    confidence: float
+    strategie: str
+    dauer: float
+    bausteine: list[dict[str, Any]]
     video: str
     cover: str
 
@@ -182,15 +169,19 @@ class Pruefung:
 
 
 def pruefe_variante(out: Path, v: Variante) -> Pruefung:
-    """Abnahme der Datei: 1080×1920, Dauer wie geplant (±0,5 s), Cover ist ein Bild."""
+    """Technische Abnahme: 1080×1920, Dauer wie geplant, Lautheit, Cover. Sieht den Inhalt nicht."""
     gruende: list[str] = []
+    lufs: float | None = None
     video = out / v.video
     try:
         p = probe(video)
         if (p.width, p.height) != (1080, 1920):
             gruende.append(f"Format {p.width}x{p.height} statt 1080x1920")
-        if abs(p.duration - (v.end - v.start)) > 0.5:
-            gruende.append(f"Dauer {p.duration:.2f} s statt {v.end - v.start:.2f} s")
+        if abs(p.duration - v.dauer) > 0.5:
+            gruende.append(f"Dauer {p.duration:.2f} s statt {v.dauer:.2f} s")
+        lufs = lautheit(video)
+        if lufs is None or abs(lufs - LAUTHEIT_ZIEL) > 2:
+            gruende.append(f"Lautheit {lufs} LUFS statt {LAUTHEIT_ZIEL:.0f} ±2")
         if video.stat().st_size == 0:
             gruende.append("Datei leer")
     except Exception as err:  # ffprobe-Fehler ist ein Befund, kein Absturz
@@ -200,9 +191,8 @@ def pruefe_variante(out: Path, v: Variante) -> Pruefung:
             gruende.append("Cover ist kein Bild")
     except MediaRejectedError as err:
         gruende.append(f"Cover: {err}")
-    return Pruefung(
-        v.name, not gruende, "; ".join(gruende) or f"1080x1920, {v.end - v.start:.1f} s, Cover ok"
-    )
+    gut = f"1080x1920, {v.dauer:.1f} s, {lufs} LUFS, Cover ok"
+    return Pruefung(v.name, not gruende, "; ".join(gruende) or gut)
 
 
 def _werkzeuge() -> list[str]:
@@ -262,6 +252,7 @@ def run_batch(
     eingaben: list[dict[str, Any]] = []
     gesehen: set[str] = set()
     abgelehnt: list[str] = []
+    namen: set[str] = set()
     for i, p in enumerate(inputs, 1):
         try:
             m = validate_media(p)
@@ -271,6 +262,10 @@ def run_batch(
         if m.sha256 in gesehen:
             abgelehnt.append(f"{p.name}: Dublette")
             continue
+        if p.name in namen:  # Storyboards verweisen per Dateiname auf die Quelle
+            abgelehnt.append(f"{p.name}: Dateiname doppelt")
+            continue
+        namen.add(p.name)
         gesehen.add(m.sha256)
         eingaben.append(
             {
@@ -320,12 +315,12 @@ def run_batch(
     artefakte = [lauf.artefakt(highlights.name)] + [
         lauf.artefakt(f"analyse-{a.asset_id}.json") for a in analysen
     ]
-    if len(kandidaten) < VARIANTEN:
+    if not kandidaten:
         lauf.melde(
             "Highlights",
             "fehlgeschlagen",
             eingabe=f"{len(analysen)} Assets",
-            fehler=f"nur {len(kandidaten)} Highlight(s) ab {MIN_LEN:.0f} s, {VARIANTEN} gebraucht",
+            fehler=f"kein Highlight ab {MIN_LEN:.0f} s",
             artefakte=artefakte,
         )
         raise SystemExit(2)
@@ -339,36 +334,37 @@ def run_batch(
         artefakte=artefakte,
     )
 
-    # 3 Videoschnitt: die besten Highlights aus möglichst verschiedenen Assets als 9:16 mit Cover.
+    # 3 Videoschnitt: aus allen Clips und brauchbaren Fotos wird je Strategie ein Post.
     t2 = time.perf_counter()
     varianten: list[Variante] = []
-    quelle = {e["asset_id"]: e for e in eingaben}
-    for n, h in enumerate(waehle_varianten(kandidaten, VARIANTEN), 1):
+    pfade = {e["datei"]: Path(e["pfad"]) for e in eingaben}
+    quellen = {e["asset_id"]: e["datei"] for e in eingaben if e["kind"] == "video"}
+    datei_von = {e["asset_id"]: e["datei"] for e in eingaben}
+    fotos = [
+        datei_von[a.asset_id]
+        for a in analysen
+        if a.kind == "image" and not (a.quality or {}).get("reasons")
+    ]
+    for n, board in enumerate(baue_storyboards(kandidaten, quellen, fotos), 1):
         name = f"variante-{n}"
         try:
-            r = render_vertical(
-                Path(quelle[h.asset_id]["pfad"]), h.start, h.end, out / f"{name}.mp4"
+            render_post(board, pfade, out / f"{name}.mp4")
+            extract_cover(
+                out / f"{name}.mp4", at=min(1.0, board.dauer / 2), out=out / f"{name}.jpg"
             )
-            extract_cover(r.path, at=min(1.0, r.duration / 2), out=out / f"{name}.jpg")
         except Exception as err:
             lauf.melde(
                 "Videoschnitt",
                 "fehlgeschlagen",
-                eingabe=f"{h.asset_id} {h.start:.1f}–{h.end:.1f} s",
+                eingabe=f"{name}: {board.strategie}, {len(board.bausteine)} Bausteine",
                 fehler=f"{name}: {err}"[:4000],
                 artefakte=[lauf.artefakt(f"{v.video}", "vorschau") for v in varianten],
             )
             raise SystemExit(1) from err
+        d = board.to_dict()
         varianten.append(
             Variante(
-                name,
-                h.asset_id,
-                quelle[h.asset_id]["datei"],
-                h.start,
-                h.end,
-                h.confidence,
-                f"{name}.mp4",
-                f"{name}.jpg",
+                name, board.strategie, d["dauer"], d["bausteine"], f"{name}.mp4", f"{name}.jpg"
             )
         )
     lauf.schreibe(
@@ -376,6 +372,7 @@ def run_batch(
         {
             "varianten": [asdict(v) for v in varianten],
             "untertitel": "nicht erzeugt (Spracherkennung SIN-1357 offen)",
+            "musik": "keine; der Trend-Sound kommt beim Posten in der App dazu",
         },
     )
     vorschau = [
@@ -386,13 +383,18 @@ def run_batch(
     lauf.melde(
         "Videoschnitt",
         "fertig",
-        eingabe="; ".join(f"{v.quelle} {v.start:.1f}–{v.end:.1f} s" for v in varianten),
-        ergebnis=f"{len(varianten)} Varianten 1080x1920 H.264 + Cover; ohne Untertitel; "
+        eingabe="; ".join(
+            f"{v.name} ({v.strategie}): " + ", ".join(b["quelle"] for b in v.bausteine)
+            for v in varianten
+        ),
+        ergebnis=f"{len(varianten)} Post(s): "
+        f"{' und '.join(f'{v.dauer:.1f} s' for v in varianten)}, "
+        "1080x1920 H.264 + Cover; ohne Untertitel und Musik; "
         f"{time.perf_counter() - t2:.1f} s",
         artefakte=vorschau,
     )
 
-    # 4 Qualitätsprüfung: ffprobe-Abnahme jeder Datei.
+    # 4 Qualitätsprüfung: nur Technik je Datei; den Inhalt bewertet Sinan bei der Freigabe.
     pruefungen = [pruefe_variante(out, v) for v in varianten]
     lauf.schreibe("pruefung.json", {"pruefungen": [asdict(p) for p in pruefungen]})
     befund = "; ".join(f"{p.name}: {p.befund}" for p in pruefungen)

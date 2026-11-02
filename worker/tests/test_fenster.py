@@ -5,7 +5,8 @@ from pathlib import Path
 import pytest
 
 from socialmedia_worker.highlights import Highlight
-from socialmedia_worker.pipeline import FENSTER_S, analyze_asset, in_fenster, waehle_varianten
+from socialmedia_worker.pipeline import FENSTER_S, analyze_asset, in_fenster
+from socialmedia_worker.post import waehle_varianten
 
 
 def test_in_fenster_teilt_lange_aufnahmen_und_haengt_kurzen_rest_an() -> None:
