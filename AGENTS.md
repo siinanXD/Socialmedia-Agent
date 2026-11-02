@@ -27,6 +27,11 @@ This repository owns the product. Leitstand coordinates issues, dispatch, review
 - Hosting (Sinan, 29.10.2026, SIN-1196): Vercel project `socialmedia-agent` (Hobby, free, team siinanxds-projects) is connected to this repo: preview per PR, production from `main`, both against the shared Supabase project (only schema `social_media`). Publishing, paid services and any other deployment still need explicit authorization. Public Vercel/Supabase values come from the Vercel project or Infisical; no service-role key in Vercel.
 - Migrations: written and tested locally and in CI; `.github/workflows/migrate.yml` applies new files from `supabase/migrations` to the shared project after merge to `main` (secret `SOCIALMEDIA_DATABASE_URL`, created by Sinan). Never by hand and never by agents against the cloud. `scripts/check-migration-schemas.mjs` (also in `build.yml`) rejects any migration that touches another schema (`public`, `auth`, `storage`, other apps), plus `drop schema`, `create extension` and `create role`. No `db reset`, no `supabase db push`.
 
+## Nutzerweg
+- `npm run test:nutzerweg` spielt die gebauten Wege wie ein Mensch durch (Playwright, Desktop 1440×900, dunkel; Vorlage Figma `0zcOlwmRdnmKoTJPneNwgC`). Nötig: `LIVE_URL`, `TESTNUTZER_EMAIL`, `TESTNUTZER_PASSWORT` (Infisical `/leitstand`, nie ins Repo). Einmalig `npx playwright install chromium`.
+- Ausgabe je Weg: GRÜN, ROT oder NOCH NICHT GEBAUT (nie grün). Screenshots in `test-results/nutzerweg/`.
+- Sichtbare Änderungen erweitern den Weg im selben PR: neuer Test in `tests/nutzerweg/nutzerweg.nutzerweg.ts`, den passenden „noch nicht gebaut“-Eintrag ersetzen. Rote Wege werden eigene kleine Issues.
+
 ## Workflow (Leitstand 2.0)
 - One Linear issue, one branch `claude/sin-<nr>-…` or `codex/sin-<nr>-…`, one PR. Title as Conventional Commit with `(SIN-<nr>)`; partial steps with `(Part of SIN-<nr>)`.
 - Test first, then code. Smallest diff; build nothing the issue does not ask for; no new dependency for a few lines.
