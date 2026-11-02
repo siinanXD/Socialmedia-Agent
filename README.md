@@ -45,6 +45,17 @@ uv run ruff check . && uv run mypy .
 
 Stand: `worker/` enthaelt `probe(path)` (Dauer, Breite, Hoehe per ffprobe), die Medien-Validierung (SIN-1173), die Szenenerkennung (SIN-1165) und den Render-Baustein (SIN-1166). Keine Queue, kein Upload.
 
+Pilot-Pipeline (SIN-1355, SIN-1364, SIN-1077; nur FFmpeg/ffprobe, kein Modell, keine Datenbank-Queue):
+
+```
+uv run python -m socialmedia_worker beispiel ./material            # synthetisches Material: 2 Clips mit Schnitten + Ton, 1 Bild
+uv run python -m socialmedia_worker analyze clip.mp4 --asset-id a1  # validate → Szenen → Signale → Highlights als JSON (Schema worker/schemas/analysis.v1.json), Exit 2 bei Ablehnung
+uv run python -m socialmedia_worker batch ./material/*.mp4 ./material/foto.png --out ./lauf --auftrag pilot-1
+uv run python -m socialmedia_worker export --out ./lauf --auftrag pilot-1  # nur nach Freigabe (Exit 3 ohne)
+```
+
+`batch` schreibt je Schritt einen Checkpoint (Upload → Highlights → Videoschnitt → Qualitätsprüfung → Freigabe) nach `lauf/checkpoints.jsonl` und, wenn `SUPABASE_ACCESS_TOKEN` (Infisical `/leitstand`) gesetzt ist, in `leitstand.checkpoints` des gemeinsamen Supabase-Projekts; dort zeigt das Leitstand-Cockpit den Lauf unter `/ablauf/<auftrag>` mit Vorschau, und Sinans Klick auf „Freigeben“ ist der Checkpoint, den `export` liest. Artefakt-Links zeigen auf `/artefakt/<auftrag>/…` des Cockpits, also muss `--out` auf dem Cockpit-Rechner unter `~/leitstand-artefakte/<auftrag>` liegen. Ausgabe: `analyse-<asset>.json`, `highlights.json`, `variante-1.mp4`/`.jpg`, `variante-2.mp4`/`.jpg` (1080×1920, Mittelschnitt, ohne Untertitel), `pruefung.json` (ffprobe-Abnahme: Format, Dauer ±0,5 s, Cover), `batch.json`; nach Freigabe `export/`. Belegter Lauf und Messwerte: `docs/E2E.md`. Nicht enthalten: Untertitel (SIN-1357), Karussell, Subjektverfolgung, Upload über die App, echtes Creator-Material (SIN-1417).
+
 ## Datenbank lokal
 Voraussetzungen: Docker und die [Supabase CLI](https://supabase.com/docs/guides/local-development).
 

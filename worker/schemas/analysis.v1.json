@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "socialmedia-worker/analysis/v1",
+  "title": "Analyse einer Datei (SIN-1355)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "asset_id", "kind", "sha256", "duration", "width", "height", "segments", "highlights", "quality", "pipeline_version"],
+  "properties": {
+    "version": { "const": 1 },
+    "asset_id": { "type": "string", "minLength": 1 },
+    "kind": { "enum": ["video", "image"] },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "duration": { "type": ["number", "null"], "minimum": 0 },
+    "width": { "type": "integer", "minimum": 1 },
+    "height": { "type": "integer", "minimum": 1 },
+    "segments": { "type": "array", "items": { "type": "array", "items": { "type": "number", "minimum": 0 }, "minItems": 2, "maxItems": 2 } },
+    "highlights": { "type": "array", "items": { "$ref": "highlights.v1.json#/properties/highlights/items" } },
+    "quality": { "type": ["object", "null"] },
+    "pipeline_version": { "type": "string", "minLength": 1 }
+  }
+}
