@@ -67,3 +67,20 @@ Das Lern-App-Repo nutzt Revideo (`BESTANDSABGLEICH.md`, Abschnitt 2). Revideo: M
 - `ARCHITECTURE.md`, "Optional adapters": Liste auf Voicebox (Phase 2, optional) kuerzen.
 - Wiedervorlage: Postiz (Phase 3, nur wenn Advisory-Lage und Betriebskosten tragbar), PhotoCraft (Karussells, wenn aus "early alpha" heraus), Voicebox (Phase 2).
 - Alle Aussagen ohne Quelle in diesem Dokument sind als "ungeprueft" markiert.
+
+## 6. Mini-Vergleich FFmpeg gegen FilmCraft (02.11.2026)
+Nachtrag: SIN-1077 nennt FilmCraft und SoundCraft, das Audit vom 27.10. hat beide nicht bewertet. FilmCraft v0.16.0 (Windows x64 portable, SHA-256 gegen `SHA256SUMS.txt` geprüft, MIT oder Apache-2.0, README: Alpha, „Ready for real work“ ~56 %) wurde headless über `filmcraft-cli` gemessen. Gleiches Storyboard, gleiche echte Handy-Quellen, gleicher PC.
+
+| Punkt | FFmpeg (`post.py`) | FilmCraft |
+| --- | --- | --- |
+| Ergebnis | 27,00 s, 1080x1920 H.264/AAC | 27,01 s, 1080x1920 H.264/AAC |
+| Laufzeit Export | 34,6 s (mit zweitem Durchgang für den Ton) | 56,6 s, 14,4 fps |
+| Dateigröße | 33,2 MB (`-crf 20`) | 66,5 MB (`--quality 80`) |
+| Lautheit | -14,3 LUFS (gemessen und angepasst) | -20,5 LUFS (nicht normalisiert) |
+| Strikter Decoder-Lauf (`-err_detect explode`) | fehlerfrei | fehlerfrei |
+| Fehler beim Bauen | keine | keine, Skript 0,15 s |
+| Zoom auf Fotos | ja | nicht gebaut (Keyframes wären möglich) |
+
+Grenzen: Die Qualitätseinstellungen sind nicht gleichwertig, also sagt die Dateigröße wenig. Keine Messung auf dem Server, kein Sehvergleich durch einen Menschen.
+
+**Entscheidung:** FFmpeg bleibt der Render-Weg, weil es schon läuft, schneller ist, auf dem Server verfügbar ist und keine Alpha-Abhängigkeit bringt. FilmCraft hat die Handy-Dateien im Test ohne Fehler verarbeitet und bleibt Kandidat für Handarbeit: Ein Storyboard lässt sich als `.fcproj` zum Nachbessern öffnen. Neu prüfen, wenn Sinan von Hand nachschneiden will. SoundCraft: nicht bewertet, kein Bedarf ohne Musik im Render.

@@ -33,3 +33,16 @@ Lokal am PC: `uv run pytest` 84 Tests grün in 39 s, davon `test_pipeline.py` 5 
 ## Nicht bewiesen
 
 Reichweite oder Qualität der Auswahl an echtem Material (Heuristik nicht kalibriert), Untertitel, Caption, Karussell, Upload über die App, Virenscan, Queue. Sinans Freigabe und der Export-Schritt stehen aus, bis er im Cockpit klickt.
+
+## Lauf mit echtem Material (02.11.2026)
+Eigene Aufnahmen von Sinan, Rechte laut Sinan ok: 2 Videos (19,5 s und 14,1 s, 720x1280) und 6 Fotos, am PC verarbeitet, Originale bleiben dort. Auftrag `pxul-post-2026-11-02-b`.
+
+| Wert | Ergebnis |
+| --- | --- |
+| Laufzeit | 30 s für beide Posts |
+| Posts | 2, je 27,0 s, 1080x1920, 11 Bausteine (5 Clips, 6 Fotos), rund 33 MB |
+| Lautheit | -14,3 LUFS je Post |
+
+Vorläufer im Cockpit: `pxul-echt-2026-11-02` und `-b` lieferten Einzelclips und sind vom Agenten zurückgezogen. `pxul-post-2026-11-02` scheiterte an der Prüfung (-16,2 LUFS bei einstufigem `loudnorm`), daraus entstand das Messen und Anpassen.
+
+Nicht bewiesen: Ob der Schnitt gut wirkt, entscheidet Sinan bei der Freigabe. Die Auswahl bewertet nur Bewegung, Wackeln zählt mit. Keine Trainingsclips, kein Trend-Tempo.
