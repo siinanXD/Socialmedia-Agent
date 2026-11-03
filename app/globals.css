@@ -1,0 +1,179 @@
+/* Richtungs-Entwurf „Creator-Studio“, dunkel. Werte als Variablen; kein Pixel-Vertrag. */
+:root {
+  color-scheme: dark;
+  --bg: #0e1015;
+  --surface: #161922;
+  --surface-2: #1e222d;
+  --border: #2a2f3d;
+  --text: #e8eaf0;
+  --text-muted: #a3a9ba; /* auf --bg ca. 7:1 */
+  --accent: #8ab4ff; /* auf --surface ca. 9:1 */
+  --focus: #ffd166;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 40px;
+  --radius: 10px;
+  --side-width: 260px;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.5;
+}
+
+a {
+  color: var(--accent);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+
+.skip-link {
+  position: absolute;
+  left: var(--space-2);
+  top: -100px;
+  background: var(--surface-2);
+  padding: var(--space-2) var(--space-3);
+  z-index: 10;
+}
+.skip-link:focus {
+  top: var(--space-2);
+}
+
+.studio {
+  display: grid;
+  grid-template-columns: var(--side-width) 1fr;
+  min-height: 100vh;
+}
+
+.studio-side {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: var(--space-4) var(--space-3);
+}
+
+.brand {
+  margin: 0 0 var(--space-4);
+  font-weight: 700;
+  font-size: 1.125rem;
+}
+
+.studio-nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.studio-nav a {
+  display: flex;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+}
+.studio-nav a:hover {
+  background: var(--surface-2);
+}
+.studio-nav a[aria-current="page"] {
+  background: var(--surface-2);
+  color: var(--accent);
+  font-weight: 600;
+}
+.nav-number {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.studio-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.studio-header form {
+  margin: 0;
+}
+
+main {
+  padding: var(--space-4);
+}
+main:focus {
+  outline: none;
+}
+
+.empty-state {
+  max-width: 640px;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-5);
+}
+.empty-state h1 {
+  margin-top: 0;
+}
+.badge {
+  display: inline-block;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+.muted {
+  color: var(--text-muted);
+}
+
+/* Schmal (Handy): Navigation oben, waagerecht scrollbar. */
+@media (max-width: 800px) {
+  .studio {
+    grid-template-columns: 1fr;
+  }
+  .studio-side {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+    padding: var(--space-3);
+  }
+  .brand {
+    margin-bottom: var(--space-2);
+  }
+  .studio-nav ul {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+  .studio-nav a {
+    white-space: nowrap;
+  }
+  .empty-state {
+    padding: var(--space-4);
+  }
+}
