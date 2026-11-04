@@ -17,7 +17,7 @@ See `docs/` and `AGENTS.md` in the planning pull request for architecture, phase
 
 ## Live testen
 Jeder PR bekommt von Vercel eine Preview-URL (Kommentar des Vercel-Bots im PR); `main` geht nach Merge in Produktion (Vercel-Projekt `socialmedia-agent`, Hobby). Beide sind für das gemeinsame Supabase-Projekt vorgesehen, Daten liegen im Schema `social_media` (RLS).
-- Produktion: https://socialmedia-agent.vercel.app
+- Produktion: Adresse noch nicht belegt (offen, SIN-1512). `https://socialmedia-agent.vercel.app` gehört nicht zu dieser App: ein Abruf am 03.11.2026 lieferte eine fremde Marketing-Seite („Nova — AI Social Media Agent“). Die echte Produktions-Adresse muss Sinan im Vercel-Projekt `socialmedia-agent` (Team siinanxds-projects) ablesen und hier eintragen; bis dahin die Preview-URL des PRs nutzen.
 - Ablauf: URL öffnen → Startseite sehen → `/api/health` öffnen, Antwort `{"status":"ok"}`.
 - Testzugang: noch keiner nötig. Die App hat weder Login noch Supabase-Anbindung; sobald es eine Anmeldung gibt, gilt Sinans Testkonto (`TESTNUTZER_EMAIL` / `TESTNUTZER_PASSWORT` in Infisical `/leitstand`, das Passwort steht nie in Repo oder PR).
 - Neue Migrationen spielt `.github/workflows/migrate.yml` nach Merge auf `main` ein. Einmalig legt Sinan das GitHub-Secret `SOCIALMEDIA_DATABASE_URL` an: Session-Pooler-URL (GitHub-Runner haben kein IPv6) einer eigenen Rolle, die nur das Schema `social_media` besitzt, `references` auf `auth.users` hat und in `supabase_migrations.schema_migrations` einfügen darf. Ohne Secret schlägt der Workflow sichtbar fehl.
