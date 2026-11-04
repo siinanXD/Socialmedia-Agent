@@ -11,7 +11,9 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:nutzerweg": "playwright test"
+    "test:nutzerweg": "playwright test",
+    "testzugang": "node scripts/testzugang.mjs",
+    "testzugang:reset": "node scripts/testzugang.mjs --reset"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
