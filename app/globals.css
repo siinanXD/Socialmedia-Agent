@@ -183,9 +183,10 @@ button {
     margin-bottom: var(--space-1);
   }
   .nav-list {
-    grid-auto-flow: column;
-    grid-auto-columns: max-content;
-    overflow-x: auto;
+    grid-template-columns: repeat(2, minmax(0, 1fr)); /* zwei mal zwei: alle vier Bereiche sichtbar, kein Seitwärts-Scrollen */
+  }
+  .nav-link {
+    white-space: normal;
   }
   .topbar {
     justify-content: space-between;
