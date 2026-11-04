@@ -10,7 +10,9 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "testzugang": "node scripts/testzugang.mjs",
+    "testzugang:reset": "node scripts/testzugang.mjs --reset"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
