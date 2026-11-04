@@ -8,6 +8,7 @@ describe("NavLinks", () => {
     expect(html.match(/aria-current="page"/g)).toHaveLength(1);
     const active = html.match(/<a [^>]*aria-current="page"[^>]*>/)?.[0] ?? "";
     expect(active).toContain('href="/auftraege"');
-    expect(html).toContain("Freigabe und Export");
+    expect(html).toContain("Freigabe &amp; Export"); // Beschriftungen wie im Figma-Frame, ohne Nummern
+    expect(html).not.toMatch(/>0[1-4]</);
   });
 });
