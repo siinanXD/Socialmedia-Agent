@@ -1,0 +1,218 @@
+{
+ "checks": [
+  {
+   "name": "desktop: ohne Anmeldung -> /login",
+   "ok": true,
+   "detail": "http://localhost:3100/login"
+  },
+  {
+   "name": "desktop: Anmeldung -> /mediathek",
+   "ok": true,
+   "detail": "http://localhost:3100/mediathek"
+  },
+  {
+   "name": "desktop /mediathek: h1=Mediathek, aktiv=Mediathek",
+   "ok": true,
+   "detail": "h1='Mediathek' aria-current=['Mediathek']"
+  },
+  {
+   "name": "desktop /mediathek: kein horizontales Scrollen",
+   "ok": true,
+   "detail": "scrollWidth=1440 viewport=1440"
+  },
+  {
+   "name": "desktop /mediathek: Abmelden im Bild",
+   "ok": true,
+   "detail": "x=1311..1408"
+  },
+  {
+   "name": "desktop /highlights: h1=Highlights, aktiv=Highlights",
+   "ok": true,
+   "detail": "h1='Highlights' aria-current=['Highlights']"
+  },
+  {
+   "name": "desktop /highlights: kein horizontales Scrollen",
+   "ok": true,
+   "detail": "scrollWidth=1440 viewport=1440"
+  },
+  {
+   "name": "desktop /highlights: Abmelden im Bild",
+   "ok": true,
+   "detail": "x=1311..1408"
+  },
+  {
+   "name": "desktop /auftraege: h1=Aufträge, aktiv=Aufträge",
+   "ok": true,
+   "detail": "h1='Aufträge' aria-current=['Aufträge']"
+  },
+  {
+   "name": "desktop /auftraege: kein horizontales Scrollen",
+   "ok": true,
+   "detail": "scrollWidth=1440 viewport=1440"
+  },
+  {
+   "name": "desktop /auftraege: Abmelden im Bild",
+   "ok": true,
+   "detail": "x=1311..1408"
+  },
+  {
+   "name": "desktop /freigabe: h1=Freigabe & Export, aktiv=Freigabe & Export",
+   "ok": true,
+   "detail": "h1='Freigabe & Export' aria-current=['Freigabe & Export']"
+  },
+  {
+   "name": "desktop /freigabe: kein horizontales Scrollen",
+   "ok": true,
+   "detail": "scrollWidth=1440 viewport=1440"
+  },
+  {
+   "name": "desktop /freigabe: Abmelden im Bild",
+   "ok": true,
+   "detail": "x=1311..1408"
+  },
+  {
+   "name": "Tab-Reihenfolge: Skip-Link, vier Bereiche, Abmelden",
+   "ok": true,
+   "detail": "['Zum Inhalt springen', 'Mediathek', 'Highlights', 'Aufträge', 'Freigabe & Export', 'Abmelden']"
+  },
+  {
+   "name": "Fokusring sichtbar (outline 3px)",
+   "ok": true,
+   "detail": "[['Zum Inhalt springen', 'solid', '3px'], ['Mediathek', 'solid', '3px'], ['Highlights', 'solid', '3px'], ['Aufträge', 'solid', '3px'], ['Freigabe & Export', 'solid', '3px'], ['Abmelden', 'solid', '3px']]"
+  },
+  {
+   "name": "desktop: Abmelden -> /login",
+   "ok": true,
+   "detail": "http://localhost:3100/login"
+  },
+  {
+   "name": "desktop: nach Abmelden geschützt",
+   "ok": true,
+   "detail": "http://localhost:3100/login"
+  },
+  {
+   "name": "handy: ohne Anmeldung -> /login",
+   "ok": true,
+   "detail": "http://localhost:3100/login"
+  },
+  {
+   "name": "handy: Anmeldung -> /mediathek",
+   "ok": true,
+   "detail": "http://localhost:3100/mediathek"
+  },
+  {
+   "name": "handy /mediathek: h1=Mediathek, aktiv=Mediathek",
+   "ok": true,
+   "detail": "h1='Mediathek' aria-current=['Mediathek']"
+  },
+  {
+   "name": "handy /mediathek: kein horizontales Scrollen",
+   "ok": true,
+   "detail": "scrollWidth=390 viewport=390"
+  },
+  {
+   "name": "handy /mediathek: Abmelden im Bild",
+   "ok": true,
+   "detail": "x=277..374"
+  },
+  {
+   "name": "handy /highlights: h1=Highlights, aktiv=Highlights",
+   "ok": true,
+   "detail": "h1='Highlights' aria-current=['Highlights']"
+  },
+  {
+   "name": "handy /highlights: kein horizontales Scrollen",
+   "ok": true,
+   "detail": "scrollWidth=390 viewport=390"
+  },
+  {
+   "name": "handy /highlights: Abmelden im Bild",
+   "ok": true,
+   "detail": "x=277..374"
+  },
+  {
+   "name": "handy /auftraege: h1=Aufträge, aktiv=Aufträge",
+   "ok": true,
+   "detail": "h1='Aufträge' aria-current=['Aufträge']"
+  },
+  {
+   "name": "handy /auftraege: kein horizontales Scrollen",
+   "ok": true,
+   "detail": "scrollWidth=390 viewport=390"
+  },
+  {
+   "name": "handy /auftraege: Abmelden im Bild",
+   "ok": true,
+   "detail": "x=277..374"
+  },
+  {
+   "name": "handy /freigabe: h1=Freigabe & Export, aktiv=Freigabe & Export",
+   "ok": true,
+   "detail": "h1='Freigabe & Export' aria-current=['Freigabe & Export']"
+  },
+  {
+   "name": "handy /freigabe: kein horizontales Scrollen",
+   "ok": true,
+   "detail": "scrollWidth=390 viewport=390"
+  },
+  {
+   "name": "handy /freigabe: Abmelden im Bild",
+   "ok": true,
+   "detail": "x=277..374"
+  },
+  {
+   "name": "handy: Abmelden -> /login",
+   "ok": true,
+   "detail": "http://localhost:3100/login"
+  },
+  {
+   "name": "handy: nach Abmelden geschützt",
+   "ok": true,
+   "detail": "http://localhost:3100/login"
+  }
+ ],
+ "console": [],
+ "sidebar_hoehe": {
+  "desktop/mediathek": 900,
+  "desktop/highlights": 900,
+  "desktop/auftraege": 900,
+  "desktop/freigabe": 900,
+  "handy/mediathek": 154,
+  "handy/highlights": 154,
+  "handy/auftraege": 154,
+  "handy/freigabe": 154
+ },
+ "tab_reihenfolge": [
+  [
+   "Zum Inhalt springen",
+   "solid",
+   "3px"
+  ],
+  [
+   "Mediathek",
+   "solid",
+   "3px"
+  ],
+  [
+   "Highlights",
+   "solid",
+   "3px"
+  ],
+  [
+   "Aufträge",
+   "solid",
+   "3px"
+  ],
+  [
+   "Freigabe & Export",
+   "solid",
+   "3px"
+  ],
+  [
+   "Abmelden",
+   "solid",
+   "3px"
+  ]
+ ],
+ "fehlgeschlagen": []
+}
