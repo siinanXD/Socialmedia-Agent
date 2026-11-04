@@ -20,6 +20,12 @@ Jeder PR bekommt von Vercel eine Preview-URL (Kommentar des Vercel-Bots im PR); 
 - Produktion: https://socialmedia-agent.vercel.app
 - Ablauf: URL öffnen → Startseite sehen → `/api/health` öffnen, Antwort `{"status":"ok"}`.
 - Testzugang: noch keiner nötig. Die App hat weder Login noch Supabase-Anbindung; sobald es eine Anmeldung gibt, gilt Sinans Testkonto (`TESTNUTZER_EMAIL` / `TESTNUTZER_PASSWORT` in Infisical `/leitstand`, das Passwort steht nie in Repo oder PR).
+- Beispieldaten zum Durchklicken (SIN-1445): `scripts/testzugang.mjs` gibt den Konten `sinan-test@sjcode.de` und `sinan-test-2@sjcode.de` je einen Creator mit Profil, drei Beispiel-Assets (nur Datenbankzeilen, keine Dateien, keine Videos Dritter) und zwei Beispiel-Aufträgen. Es fasst nur diese beiden Konten an, ist idempotent und überspringt Tabellen, die es noch nicht gibt (und nennt sie). Fehlt ein Konto, legt es das Skript mit dem Passwort aus der Umgebung an. Das zweite Konto dient der Prüfung „sieht nichts vom ersten“. Werte kommen aus Infisical `/leitstand` (`TESTNUTZER_PASSWORT`, `TESTNUTZER2_PASSWORT`, dazu `SUPABASE_URL` und `SUPABASE_SERVICE_ROLE_KEY` nur für dieses Skript, nie in der App oder im Repo):
+  ```
+  npm run testzugang          # befüllen (beliebig oft)
+  npm run testzugang:reset    # Beispieldaten beider Konten löschen und neu anlegen (Anfangsstand)
+  ```
+  Stand: Logik und Idempotenz sind mit einem In-Memory-Ersatz getestet (`scripts/testzugang.test.ts`); der Lauf gegen eine echte Datenbank ist noch nicht belegt. Die App zeigt noch keine Assets- oder Auftragsseiten, gefüllt ist bislang nur die Datenbank.
 - Neue Migrationen spielt `.github/workflows/migrate.yml` nach Merge auf `main` ein. Einmalig legt Sinan das GitHub-Secret `SOCIALMEDIA_DATABASE_URL` an: Session-Pooler-URL (GitHub-Runner haben kein IPv6) einer eigenen Rolle, die nur das Schema `social_media` besitzt, `references` auf `auth.users` hat und in `supabase_migrations.schema_migrations` einfügen darf. Ohne Secret schlägt der Workflow sichtbar fehl.
 
 ## App lokal
