@@ -43,6 +43,21 @@ describe("updateSession", () => {
     expect(res.status).toBe(200);
   });
 
+  it("lässt /passwort-vergessen ohne Session offen", async () => {
+    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    expect((await updateSession(req("/passwort-vergessen"))).status).toBe(200);
+  });
+
+  it.each(["/passwort-neu", "/auth/callback"])("lässt %s ohne Session durch (die Seite prüft selbst)", async (path) => {
+    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    expect((await updateSession(req(path))).status).toBe(200);
+  });
+
+  it("schickt Nutzer mit Recovery-Session nicht von /passwort-neu weg", async () => {
+    getUser.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
+    expect((await updateSession(req("/passwort-neu"))).status).toBe(200);
+  });
+
   it("schickt angemeldete Nutzer von /login auf /", async () => {
     getUser.mockResolvedValue({ data: { user: { id: "u1" } }, error: null });
     const res = await updateSession(req("/login"));

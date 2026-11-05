@@ -2,7 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabaseEnv } from "./env";
 
-const PUBLIC_PATHS = ["/login", "/registrieren"];
+const PUBLIC_PATHS = ["/login", "/registrieren", "/passwort-vergessen"];
+// Immer durchgelassen, auch mit Session: /passwort-neu prüft die Recovery-Session selbst, der Callback tauscht den Code.
+const OPEN_PATHS = ["/passwort-neu", "/auth/callback"];
 
 /**
  * Frischt die Session auf und schützt alle Routen außer den öffentlichen.
@@ -27,6 +29,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const signedIn = !error && data.user !== null;
   const { pathname } = request.nextUrl;
   const isPublic = PUBLIC_PATHS.includes(pathname);
+  if (OPEN_PATHS.includes(pathname)) return response;
 
   if (!signedIn && !isPublic) return redirectTo(request, "/login", response);
   if (signedIn && isPublic) return redirectTo(request, "/", response);

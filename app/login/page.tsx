@@ -25,6 +25,9 @@ export default async function LoginPage({
         <SubmitButton label="Anmelden" pendingLabel="Anmeldung läuft …" />
       </form>
       <p>
+        <a href="/passwort-vergessen">Passwort vergessen?</a>
+      </p>
+      <p>
         Noch kein Konto? <a href="/registrieren">Registrieren</a>
       </p>
     </main>
