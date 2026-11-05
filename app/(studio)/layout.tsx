@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { logoutAction } from "../../lib/auth/actions";
 import { requireUser } from "../../lib/auth/session";
@@ -16,6 +17,7 @@ export default async function StudioLayout({ children }: { children: ReactNode }
       </aside>
       <header className="topbar">
         <span>{user.email}</span>
+        <Link href="/profil">Profil</Link>
         <form action={logoutAction}>
           <button type="submit">Abmelden</button>
         </form>
