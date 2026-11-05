@@ -1,8 +1,10 @@
+import { stripVTControlCharacters } from "node:util";
 import type { Reporter, TestCase, TestResult } from "@playwright/test/reporter";
 
 const NOCH_NICHT = "[noch nicht gebaut] ";
+const ohneFarbe = stripVTControlCharacters;
 
-// Je Weg eine Zeile: grün, rot oder noch nicht gebaut. Übersprungen heißt hier nie grün.
+// Je Weg eine Zeile: grün, rot, nicht gespielt oder noch nicht gebaut. Übersprungen heißt hier nie grün.
 export default class Nutzerweg implements Reporter {
   private zeilen: string[] = [];
   private rot = 0;
@@ -14,15 +16,19 @@ export default class Nutzerweg implements Reporter {
       this.zeilen.push(`NOCH NICHT GEBAUT  ${name}`);
     } else if (result.status === "passed") {
       this.zeilen.push(`GRÜN              ${name}`);
+    } else if (result.status === "skipped") {
+      // Serieller Lauf: ein roter Vorgänger überspringt den Rest. Der Weg wurde nicht gespielt.
+      this.rot++;
+      this.zeilen.push(`NICHT GESPIELT     ${name}  (Vorgänger rot)`);
     } else {
       this.rot++;
-      this.zeilen.push(`ROT               ${name}  (${result.error?.message?.split("\n")[0] ?? result.status})`);
+      this.zeilen.push(`ROT               ${name}  (${ohneFarbe(result.error?.message ?? result.status).split("\n")[0]})`);
     }
   }
 
   onError(error: { message?: string }) {
     this.rot++;
-    this.zeilen.push(`ROT               ${error.message?.split("\n")[0] ?? "Fehler"}`);
+    this.zeilen.push(`ROT               ${ohneFarbe(error.message ?? "Fehler").split("\n")[0]}`);
   }
 
   onEnd() {

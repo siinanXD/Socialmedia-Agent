@@ -29,7 +29,7 @@ This repository owns the product. Leitstand coordinates issues, dispatch, review
 
 ## Nutzerweg
 - `npm run test:nutzerweg` spielt die gebauten Wege wie ein Mensch durch (Playwright, Desktop 1440×900, dunkel; Vorlage Figma `0zcOlwmRdnmKoTJPneNwgC`). Nötig: `LIVE_URL`, `TESTNUTZER_EMAIL`, `TESTNUTZER_PASSWORT` (Infisical `/leitstand`, nie ins Repo). Einmalig `npx playwright install chromium`.
-- Ausgabe je Weg: GRÜN, ROT oder NOCH NICHT GEBAUT (nie grün). Screenshots in `test-results/nutzerweg/`.
+- Ausgabe je Weg: GRÜN, ROT, NICHT GESPIELT (ein roter Vorgänger hat den Rest übersprungen) oder NOCH NICHT GEBAUT (nie grün). Screenshots in `test-results/nutzerweg/`.
 - Sichtbare Änderungen erweitern den Weg im selben PR: neuer Test in `tests/nutzerweg/nutzerweg.nutzerweg.ts`, den passenden „noch nicht gebaut“-Eintrag ersetzen. Rote Wege werden eigene kleine Issues.
 
 ## Workflow (Leitstand 2.0)

@@ -15,7 +15,8 @@ async function anmelden(page: Page) {
   await page.getByLabel("E-Mail").fill(zugang.email);
   await page.getByLabel("Passwort").fill(zugang.passwort);
   await page.getByRole("button", { name: "Anmelden" }).click();
-  await expect(page.getByRole("heading", { name: "Socialmedia-Agent" })).toBeVisible();
+  // Nur was der Mensch sieht: Auf der Live-Adresse bleibt die Adresszeile nach dem Login auf "/" stehen, die Seite ist die Mediathek.
+  await expect(page.getByRole("heading", { name: "Mediathek", level: 1 })).toBeVisible();
 }
 
 test("Registrierungsseite ist erreichbar", async ({ page }) => {
@@ -29,31 +30,48 @@ test("Registrierungsseite ist erreichbar", async ({ page }) => {
 
 test("Anmelden mit dem Testkonto", async ({ page }) => {
   await anmelden(page);
-  await expect(page.getByText(`Angemeldet als ${zugang.email}`)).toBeVisible();
+  await expect(page.getByRole("banner").getByText(zugang.email)).toBeVisible();
   await shot(page, "02-anmelden");
 });
 
 test("Creator vorhanden", async ({ page }) => {
-  // Die Startseite legt den Creator an (ensureCreator) und bricht ohne ihn mit einem Fehler ab.
+  // Das Studio-Layout legt den Creator an (ensureCreator) und bricht ohne ihn mit einem Fehler ab.
   await anmelden(page);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Socialmedia-Agent" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Mediathek", level: 1 })).toBeVisible();
   await expect(page.getByText(/Application error|Internal Server Error/i)).toHaveCount(0);
   await shot(page, "03-creator");
+});
+
+test("Vier Bereiche in der Navigation", async ({ page }) => {
+  await anmelden(page);
+  const navigation = page.getByRole("navigation", { name: "Hauptnavigation" });
+  for (const bereich of ["Mediathek", "Highlights", "Aufträge", "Freigabe & Export"]) {
+    await navigation.getByRole("link", { name: bereich }).click();
+    await expect(page.getByRole("heading", { name: bereich, level: 1 })).toBeVisible();
+    await expect(navigation.getByRole("link", { name: bereich })).toHaveAttribute("aria-current", "page");
+  }
+  await shot(page, "04-bereiche");
+});
+
+test("Handy: Mediathek nach dem Anmelden", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await anmelden(page);
+  await shot(page, "05-handy-mediathek");
 });
 
 test("Abmelden", async ({ page }) => {
   await anmelden(page);
   await page.getByRole("button", { name: "Abmelden" }).click();
   await expect(page).toHaveURL(/\/login$/);
-  await shot(page, "04-abmelden");
+  await shot(page, "06-abmelden");
 });
 
 test("Ohne Sitzung leitet / auf /login weiter", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/login$/);
   await expect(page.getByRole("heading", { name: "Anmelden" })).toBeVisible();
-  await shot(page, "05-weiterleitung");
+  await shot(page, "07-weiterleitung");
 });
 
 // Noch nicht gebaut: wird gelistet, nie grün. Wer einen Weg baut, ersetzt den Eintrag durch einen echten Test.
