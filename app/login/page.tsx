@@ -1,4 +1,6 @@
 import { loginAction } from "../../lib/auth/actions";
+import { AuthIntro } from "../../components/auth-intro";
+import { SubmitButton } from "../../components/submit-button";
 import { messageFor } from "../../lib/auth/messages";
 
 export default async function LoginPage({
@@ -9,7 +11,8 @@ export default async function LoginPage({
   const { fehler, hinweis } = await searchParams;
   const message = messageFor(fehler) ?? messageFor(hinweis);
   return (
-    <main>
+    <main className="auth">
+      <AuthIntro />
       <h1>Anmelden</h1>
       {message && <p role="alert">{message}</p>}
       <form action={loginAction}>
@@ -19,7 +22,7 @@ export default async function LoginPage({
         <label>
           Passwort <input name="password" type="password" autoComplete="current-password" required />
         </label>
-        <button type="submit">Anmelden</button>
+        <SubmitButton label="Anmelden" pendingLabel="Anmeldung läuft …" />
       </form>
       <p>
         Noch kein Konto? <a href="/registrieren">Registrieren</a>

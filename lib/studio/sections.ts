@@ -8,7 +8,7 @@ export const SECTIONS: readonly Section[] = [
   {
     href: "/mediathek",
     label: "Mediathek",
-    leer: { titel: "Noch keine Medien", text: "Geplant: Hier erscheinen deine hochgeladenen Clips und Fotos." },
+    leer: { titel: "Noch keine Medien", text: "Als Nächstes kommt der Upload: Dann ziehst du Clips und Fotos hierher. Bis dahin gibt es hier noch nichts zu tun." },
   },
   {
     href: "/highlights",
