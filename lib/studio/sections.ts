@@ -28,6 +28,11 @@ export const SECTIONS: readonly Section[] = [
       text: "Geplant: Varianten prüfen, freigeben und exportieren. Veröffentlicht wird nie automatisch.",
     },
   },
+  {
+    href: "/profil",
+    label: "Profil",
+    leer: { titel: "Noch kein Profil", text: "Nische, Plattformen, Tonalität und Zielgruppe festlegen." },
+  },
 ];
 
 export function isActive(pathname: string, href: string): boolean {

@@ -10,7 +10,7 @@ describe("isActive", () => {
     expect(isActive("/highlights", "/mediathek")).toBe(false);
     expect(isActive("/mediathek-x", "/mediathek")).toBe(false);
   });
-  it("hat vier Bereiche", () => {
-    expect(SECTIONS.map((s) => s.href)).toEqual(["/mediathek", "/highlights", "/auftraege", "/freigabe"]);
+  it("hat fünf Bereiche", () => {
+    expect(SECTIONS.map((s) => s.href)).toEqual(["/mediathek", "/highlights", "/auftraege", "/freigabe", "/profil"]);
   });
 });

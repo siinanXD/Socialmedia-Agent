@@ -261,6 +261,57 @@ button:disabled {
   }
 }
 
+.profile-form {
+  display: grid;
+  gap: var(--space-2);
+  max-width: 40rem;
+}
+
+.profile-form label,
+.profile-form fieldset {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.profile-form fieldset {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-2);
+  margin: 0;
+}
+
+.profile-form input:not([type="checkbox"]),
+.profile-form textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.625rem 0.75rem;
+}
+
+.profile-form .check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.profile-form small {
+  color: var(--text-muted);
+}
+
+.profile-form [role="alert"],
+.profile-form .notice {
+  margin: 0;
+}
+
+.profile-form .notice {
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  background: var(--raised);
+}
+
 @media (max-width: 40rem) {
   .shell {
     grid-template-columns: minmax(0, 1fr);
