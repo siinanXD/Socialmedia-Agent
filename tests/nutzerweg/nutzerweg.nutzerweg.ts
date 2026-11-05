@@ -15,8 +15,10 @@ async function anmelden(page: Page) {
   await page.getByLabel("E-Mail").fill(zugang.email);
   await page.getByLabel("Passwort").fill(zugang.passwort);
   await page.getByRole("button", { name: "Anmelden" }).click();
-  // Nur was der Mensch sieht: Auf der Live-Adresse bleibt die Adresszeile nach dem Login auf "/" stehen, die Seite ist die Mediathek.
   await expect(page.getByRole("heading", { name: "Mediathek", level: 1 })).toBeVisible();
+  // SIN-1582: Die Adresszeile zeigt die Seite, nicht "/", und die Navigation markiert sie.
+  await expect(page).toHaveURL(/\/mediathek$/);
+  await expect(page.getByRole("navigation", { name: "Hauptnavigation" }).getByRole("link", { name: "Mediathek" })).toHaveAttribute("aria-current", "page");
 }
 
 test("Registrierungsseite ist erreichbar", async ({ page }) => {

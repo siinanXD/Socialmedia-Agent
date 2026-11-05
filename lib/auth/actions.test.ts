@@ -42,9 +42,9 @@ beforeEach(() => {
 });
 
 describe("loginAction", () => {
-  it("leitet bei Erfolg auf / weiter", async () => {
+  it("leitet bei Erfolg direkt auf /mediathek weiter", async () => {
     signInWithPassword.mockResolvedValue({ error: null });
-    expect(await target(loginAction(form("a@b.de", "passwort1")))).toBe("/");
+    expect(await target(loginAction(form("a@b.de", "passwort1")))).toBe("/mediathek");
   });
 
   it("zeigt bei Fehler nur einen festen Code, nie die Rohmeldung", async () => {
@@ -63,9 +63,9 @@ describe("loginAction", () => {
 });
 
 describe("registerAction", () => {
-  it("leitet mit Session auf / weiter", async () => {
+  it("leitet mit Session direkt auf /mediathek weiter", async () => {
     signUp.mockResolvedValue({ data: { session: { access_token: "t" } }, error: null });
-    expect(await target(registerAction(form("a@b.de", "passwort123")))).toBe("/");
+    expect(await target(registerAction(form("a@b.de", "passwort123")))).toBe("/mediathek");
   });
 
   it("verweist ohne Session (E-Mail-Bestätigung) auf /login mit Hinweis", async () => {

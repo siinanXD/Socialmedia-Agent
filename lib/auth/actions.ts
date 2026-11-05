@@ -22,7 +22,7 @@ export async function loginAction(formData: FormData): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) redirect("/login?fehler=anmeldung");
-  redirect("/");
+  redirect("/mediathek");
 }
 
 export async function registerAction(formData: FormData): Promise<void> {
@@ -35,7 +35,7 @@ export async function registerAction(formData: FormData): Promise<void> {
   if (error) redirect("/registrieren?fehler=registrierung");
   // Mit E-Mail-Bestätigung gibt es noch keine Session.
   if (!data.session) redirect("/login?hinweis=bestaetigen");
-  redirect("/");
+  redirect("/mediathek");
 }
 
 export async function logoutAction(): Promise<void> {
