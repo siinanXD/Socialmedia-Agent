@@ -98,4 +98,5 @@ create policy job_assets_insert_own on social_media.job_assets for insert to aut
   with check (creator_id in (select id from social_media.creators where user_id = (select auth.uid()))
     and exists (select 1 from social_media.jobs j where j.id = job_id and j.status = 'queued'));
 create policy job_assets_delete_own on social_media.job_assets for delete to authenticated
-  using (creator_id in (select id from social_media.creators where user_id = (select auth.uid())));
+  using (creator_id in (select id from social_media.creators where user_id = (select auth.uid()))
+    and exists (select 1 from social_media.jobs j where j.id = job_id and j.status = 'queued'));

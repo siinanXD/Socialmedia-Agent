@@ -1,7 +1,7 @@
 -- SIN-1378: jobs als Queue (Typ, Versuche, Lease, Abbruch) und Verknüpfung job_assets.
 -- Läuft mit `supabase test db`. Nutzer A und B haben je einen Creator, Assets und Jobs.
 begin;
-select plan(55);
+select plan(58);
 
 -- Aufbau als Superuser (umgeht RLS)
 insert into auth.users (id, email) values
@@ -19,8 +19,15 @@ insert into social_media.jobs (id, creator_id, idempotency_key) values
   ('a1c00000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001', 'queued-a'),
   ('a1c00000-0000-0000-0000-000000000002', 'a1000000-0000-0000-0000-000000000001', 'running-a'),
   ('a1c00000-0000-0000-0000-000000000003', 'a1000000-0000-0000-0000-000000000001', 'cancel-a'),
+  ('a1c00000-0000-0000-0000-000000000004', 'a1000000-0000-0000-0000-000000000001', 'done-a'),
   ('b2c00000-0000-0000-0000-000000000002', 'b2000000-0000-0000-0000-000000000002', 'queued-b');
-update social_media.jobs set status = 'running' where id = 'a1c00000-0000-0000-0000-000000000002';
+-- Verknüpfungen für laufenden und abgeschlossenen Job legt der Aufbau an (Nutzer dürfen das nur bei queued)
+insert into social_media.job_assets (job_id, asset_id, creator_id) values
+  ('a1c00000-0000-0000-0000-000000000002', 'a1a00000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001'),
+  ('a1c00000-0000-0000-0000-000000000004', 'a1a00000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001');
+update social_media.jobs set status = 'running' where id in
+  ('a1c00000-0000-0000-0000-000000000002', 'a1c00000-0000-0000-0000-000000000004');
+update social_media.jobs set status = 'succeeded' where id = 'a1c00000-0000-0000-0000-000000000004';
 
 -- Struktur
 select has_column('social_media', 'jobs', 'kind', 'jobs.kind');
@@ -67,7 +74,8 @@ set local role authenticated;
 select set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-0000-0000-0000-000000000001","role":"authenticated"}', true);
 
-select is((select count(*) from social_media.job_assets), 1::bigint, 'A sieht die eigene Verknüpfung');
+select is((select count(*) from social_media.job_assets where job_id = 'a1c00000-0000-0000-0000-000000000003'),
+  1::bigint, 'A sieht die eigene Verknüpfung');
 select lives_ok(
   $$insert into social_media.job_assets (job_id, asset_id, creator_id) values
     ('a1c00000-0000-0000-0000-000000000001', 'a1a00000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001')$$,
@@ -88,6 +96,15 @@ select throws_ok(
   $$insert into social_media.job_assets (job_id, asset_id, creator_id) values
     ('a1c00000-0000-0000-0000-000000000002', 'a1a00000-0000-0000-0000-000000000001', 'a1000000-0000-0000-0000-000000000001')$$,
   '42501', null, 'A ändert die Eingabe eines laufenden Jobs nicht');
+select is_empty(
+  $$delete from social_media.job_assets where job_id = 'a1c00000-0000-0000-0000-000000000002' returning 1$$,
+  'A löscht keine Verknüpfung eines laufenden Jobs');
+select is_empty(
+  $$delete from social_media.job_assets where job_id = 'a1c00000-0000-0000-0000-000000000004' returning 1$$,
+  'A löscht keine Verknüpfung eines abgeschlossenen Jobs');
+select isnt_empty(
+  $$delete from social_media.job_assets where job_id = 'a1c00000-0000-0000-0000-000000000001' returning 1$$,
+  'A löscht die Verknüpfung eines wartenden Jobs');
 
 -- Worker-Felder gehören dem Worker
 select throws_ok(
