@@ -1,4 +1,6 @@
 import { registerAction } from "../../lib/auth/actions";
+import { AuthIntro } from "../../components/auth-intro";
+import { SubmitButton } from "../../components/submit-button";
 import { messageFor } from "../../lib/auth/messages";
 
 export default async function RegisterPage({
@@ -9,7 +11,8 @@ export default async function RegisterPage({
   const { fehler } = await searchParams;
   const message = messageFor(fehler);
   return (
-    <main>
+    <main className="auth">
+      <AuthIntro />
       <h1>Registrieren</h1>
       {message && <p role="alert">{message}</p>}
       <form action={registerAction}>
@@ -20,7 +23,7 @@ export default async function RegisterPage({
           Passwort (mindestens 8 Zeichen){" "}
           <input name="password" type="password" autoComplete="new-password" minLength={8} required />
         </label>
-        <button type="submit">Registrieren</button>
+        <SubmitButton label="Registrieren" pendingLabel="Registrierung läuft …" />
       </form>
       <p>
         Schon registriert? <a href="/login">Anmelden</a>
