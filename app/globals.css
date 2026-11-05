@@ -287,3 +287,100 @@ button:disabled {
     padding: 0 var(--space-2) var(--space-2);
   }
 }
+
+/* Profil (SIN-1386): kein Figma-Frame vorhanden, Werte aus den Tokens der Studio-Frames. */
+.profile-intro {
+  margin: 0 0 var(--space-3);
+  max-width: 40rem;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.profile {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 40rem;
+}
+
+.profile section {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--surface);
+  border-radius: var(--radius-lg);
+}
+
+.profile h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.profile label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.profile label.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.profile input[type="checkbox"] {
+  width: 1.125rem;
+  height: 1.125rem;
+  accent-color: var(--accent);
+}
+
+.profile input:not([type="checkbox"]),
+.profile textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.625rem 0.75rem;
+}
+
+.profile textarea {
+  resize: vertical;
+}
+
+.profile small,
+.profile .hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.8125rem;
+}
+
+.profile .hint.warn {
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  background: var(--raised);
+  color: var(--text);
+}
+
+.profile-message {
+  max-width: 40rem;
+  margin: 0 0 var(--space-2);
+  padding: 0.75rem;
+  border-radius: var(--radius);
+  background: var(--raised);
+  font-size: 0.875rem;
+}
+
+.profile-message.ok {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.profile-message.error {
+  box-shadow: inset 3px 0 0 var(--focus);
+}
+
+.topbar a {
+  color: var(--link);
+}
