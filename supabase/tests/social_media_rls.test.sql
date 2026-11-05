@@ -29,7 +29,7 @@ select has_table('social_media', 'assets', 'Tabelle assets existiert');
 select has_table('social_media', 'jobs', 'Tabelle jobs existiert');
 select is(
   (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'social_media' and c.relkind = 'r' and c.relrowsecurity),
+    where n.nspname = 'social_media' and c.relname in ('creators', 'assets', 'jobs') and c.relrowsecurity),
   3::bigint, 'RLS ist auf allen drei Tabellen aktiv');
 select is(
   (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
