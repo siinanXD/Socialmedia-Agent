@@ -13,8 +13,11 @@ describe("profileMessage", () => {
     expect(profileMessage({})).toBeNull();
   });
 
-  it("der Speichern-Fehler nennt keine internen Details", () => {
-    const m = profileMessage({ fehler: "speichern" });
-    expect(m?.text).not.toMatch(/postgres|sql|rls|policy|42501|permission/i);
+  it("die Fehler zum Speichern und Laden nennen keine internen Details", () => {
+    for (const code of ["speichern", "laden"]) {
+      const m = profileMessage({ fehler: code });
+      expect(m?.kind).toBe("error");
+      expect(m?.text).not.toMatch(/postgres|sql|rls|policy|42501|permission|relation|table/i);
+    }
   });
 });

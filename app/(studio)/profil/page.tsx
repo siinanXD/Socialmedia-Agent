@@ -22,8 +22,22 @@ export default async function ProfilPage({
   searchParams: Promise<{ fehler?: string; hinweis?: string }>;
 }) {
   const user = await requireUser();
-  const profile = (await loadProfile(await createClient(), user.id)) ?? LEER;
-  const message = profileMessage(await searchParams);
+  const params = await searchParams;
+  let profile: ProfileValues;
+  try {
+    profile = (await loadProfile(await createClient(), user.id)) ?? LEER;
+  } catch {
+    // Kein Formular ohne geladene Werte: ein leeres Formular würde ein vorhandenes Profil überschreiben.
+    return (
+      <>
+        <h1>Profil</h1>
+        <p role="alert" className="profile-message error">
+          {profileMessage({ fehler: "laden" })?.text}
+        </p>
+      </>
+    );
+  }
+  const message = profileMessage(params);
 
   return (
     <>

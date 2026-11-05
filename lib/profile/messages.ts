@@ -7,6 +7,7 @@ const ERRORS: Record<string, string> = {
   hashtags_anzahl: "Bitte höchstens 30 Hashtags angeben.",
   hashtags_zeichen: "Hashtags dürfen nur Buchstaben, Ziffern und Unterstriche enthalten (höchstens 50 Zeichen).",
   speichern: "Das Profil konnte nicht gespeichert werden. Bitte später noch einmal versuchen.",
+  laden: "Das Profil konnte gerade nicht geladen werden. Bitte später noch einmal versuchen.",
 };
 
 const NOTICES: Record<string, string> = {
