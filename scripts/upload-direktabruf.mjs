@@ -1,15 +1,17 @@
 // SIN-1387: Direkter Abruf gegen die LOKALE Supabase: Konto B auf die Datei, die Konto A im Browser hochgeladen hat.
 // Aufruf: node scripts/upload-direktabruf.mjs <anon-key> <clip-pfad>; Passwörter aus der Umgebung (Infisical), nie ausgegeben.
+// Staging: PRUEF_SUPABASE_URL=https://pxoqubnwjegshkxirphm.supabase.co, Konten aus SM_STAGING_A_*/SM_STAGING_B_*.
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 const [anon, clip] = process.argv.slice(2);
-const url = "http://127.0.0.1:54321";
+const url = process.env.PRUEF_SUPABASE_URL ?? "http://127.0.0.1:54321";
 async function token(email, password) {
   const r = await fetch(`${url}/auth/v1/token?grant_type=password`, { method: "POST", headers: { apikey: anon, "content-type": "application/json" }, body: JSON.stringify({ email, password }) });
   return (await r.json()).access_token;
 }
-const a = await token(process.env.TESTNUTZER_EMAIL, process.env.TESTNUTZER_PASSWORT);
-const b = await token("sinan-test-2@sjcode.de", process.env.TESTNUTZER2_PASSWORT);
+const env = process.env;
+const a = await token(env.SM_STAGING_A_EMAIL ?? env.TESTNUTZER_EMAIL, env.SM_STAGING_A_PASSWORT ?? env.TESTNUTZER_PASSWORT);
+const b = await token(env.SM_STAGING_B_EMAIL ?? "sinan-test-2@sjcode.de", env.SM_STAGING_B_PASSWORT ?? env.TESTNUTZER2_PASSWORT);
 const h = (t, extra = {}) => ({ apikey: anon, authorization: `Bearer ${t}`, ...extra });
 const rest = (t, q) => fetch(`${url}/rest/v1/${q}`, { headers: h(t, { "accept-profile": "social_media" }) }).then((r) => r.json());
 
