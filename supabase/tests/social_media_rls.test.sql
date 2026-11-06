@@ -124,7 +124,7 @@ select throws_ok(
   '23514', null, 'A kann einen wartenden Job nicht auf succeeded setzen (Trigger)');
 select throws_ok(
   $$update social_media.jobs set status = 'succeeded' where id = 'a1c00000-0000-0000-0000-000000000002'$$,
-  '42501', null, 'A kann einen laufenden Job nicht auf succeeded setzen (RLS)');
+  '23514', null, 'A kann einen laufenden Job nicht auf succeeded setzen (Trigger, vor RLS)');
 select isnt_empty(
   $$update social_media.jobs set status = 'cancelled' where id = 'a1c00000-0000-0000-0000-000000000001' returning 1$$,
   'A bricht den eigenen Job ab');
