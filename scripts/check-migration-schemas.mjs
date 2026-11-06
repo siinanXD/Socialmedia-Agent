@@ -52,7 +52,9 @@ function grantTargetOk(stmt) {
   const spec = m[1].trim();
   const inSchema = /^all\s+\w+\s+in\s+schema\s+([\s\S]+)$/i.exec(spec) ?? /^schema\s+([\s\S]+)$/i.exec(spec);
   if (inSchema) return listOk(inSchema[1], schemaOk);
-  return listOk(spec.replace(/^(?:table|sequence|function|procedure|type|domain)\s+/i, ""));
+  // Argumentlisten von Funktionen (`f(uuid, text)`) enthalten Kommas, sind aber kein Ziel: vor dem Aufteilen entfernen.
+  const targets = spec.replace(/^(?:table|sequence|function|procedure|type|domain)\s+/i, "").replace(/\([^)]*\)/g, "");
+  return listOk(targets);
 }
 
 function statementOk(stmt) {
