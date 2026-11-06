@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
-import { zugangAus } from "./zugang";
+import { resolve } from "node:path";
+import { zweitesKontoAus, zugangAus } from "./zugang";
 
 const zugang = zugangAus(process.env);
 
@@ -10,10 +11,10 @@ async function shot(page: Page, name: string) {
   await page.screenshot({ path: `test-results/nutzerweg/${name}.png`, fullPage: true });
 }
 
-async function anmelden(page: Page) {
+async function anmelden(page: Page, konto: { email: string; passwort: string } = zugang) {
   await page.goto("/login");
-  await page.getByLabel("E-Mail").fill(zugang.email);
-  await page.getByLabel("Passwort").fill(zugang.passwort);
+  await page.getByLabel("E-Mail").fill(konto.email);
+  await page.getByLabel("Passwort").fill(konto.passwort);
   await page.getByRole("button", { name: "Anmelden" }).click();
   await expect(page.getByRole("heading", { name: "Mediathek", level: 1 })).toBeVisible();
   // SIN-1582: Die Adresszeile zeigt die Seite, nicht "/", und die Navigation markiert sie.
@@ -76,9 +77,29 @@ test("Ohne Sitzung leitet / auf /login weiter", async ({ page }) => {
   await shot(page, "07-weiterleitung");
 });
 
+// SIN-1387: echter Clip (2 s, 216x384, H.264/AAC, mit FFmpeg aus testsrc erzeugt, keine fremden Inhalte).
+const CLIP = resolve("tests/nutzerweg/nutzerweg-testclip.mp4");
+
+test("Material hochladen und nach dem Neuladen wiedersehen", async ({ page }) => {
+  await anmelden(page);
+  await page.getByLabel("Datei").setInputFiles(CLIP);
+  await page.getByLabel("Rechte-Bestätigung").fill("Testclip, selbst erzeugt.");
+  await page.getByRole("button", { name: "Hochladen" }).click();
+  // Beim wiederholten Lauf liegt der Clip schon da; beides heißt: er gehört diesem Konto.
+  await expect(page.getByText(/ist hochgeladen und wird geprüft|liegt schon in deiner Mediathek/)).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("list").getByText("nutzerweg-testclip.mp4")).toBeVisible();
+  await shot(page, "08-hochgeladen");
+});
+
+test("Zweites Konto sieht den Clip nicht", async ({ page }) => {
+  await anmelden(page, zweitesKontoAus(process.env));
+  await expect(page.getByText("nutzerweg-testclip.mp4")).toHaveCount(0);
+  await shot(page, "09-zweites-konto");
+});
+
 // Noch nicht gebaut: wird gelistet, nie grün. Wer einen Weg baut, ersetzt den Eintrag durch einen echten Test.
 const nochNichtGebaut = [
-  "Material hochladen (Videos und Fotos)",
   "Highlights ansehen",
   "Post-Entwurf prüfen und freigeben",
   "Veröffentlichen",

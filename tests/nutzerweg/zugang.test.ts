@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { zugangAus } from "./zugang";
+import { zweitesKontoAus, zugangAus } from "./zugang";
 
 describe("zugangAus", () => {
   it("nennt fehlende Namen, aber keine Werte", () => {
@@ -14,5 +14,16 @@ describe("zugangAus", () => {
       email: "a@b.c",
       passwort: "pw",
     });
+  });
+});
+
+describe("zweitesKontoAus", () => {
+  it("nimmt das zweite Testkonto, die Adresse ist überschreibbar", () => {
+    expect(zweitesKontoAus({ TESTNUTZER2_PASSWORT: "pw2" })).toEqual({ email: "sinan-test-2@sjcode.de", passwort: "pw2" });
+    expect(zweitesKontoAus({ TESTNUTZER2_EMAIL: "b@x.test", TESTNUTZER2_PASSWORT: "pw2" }).email).toBe("b@x.test");
+  });
+
+  it("nennt das fehlende Passwort nur beim Namen", () => {
+    expect(() => zweitesKontoAus({})).toThrow("Fehlende Umgebungsvariablen: TESTNUTZER2_PASSWORT");
   });
 });
