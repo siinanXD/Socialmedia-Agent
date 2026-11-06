@@ -82,8 +82,8 @@ const CLIP = resolve("tests/nutzerweg/nutzerweg-testclip.mp4");
 
 test("Material hochladen und nach dem Neuladen wiedersehen", async ({ page }) => {
   await anmelden(page);
-  await page.getByLabel("Datei").setInputFiles(CLIP);
-  await page.getByLabel("Rechte-Bestätigung").fill("Testclip, selbst erzeugt.");
+  await page.locator('input[type="file"]').setInputFiles(CLIP);
+  await page.getByRole("textbox", { name: /^Rechte-Bestätigung/ }).fill("Testclip, selbst erzeugt.");
   await page.getByRole("button", { name: "Hochladen" }).click();
   // Beim wiederholten Lauf liegt der Clip schon da; beides heißt: er gehört diesem Konto.
   await expect(page.getByText(/ist hochgeladen und wird geprüft|liegt schon in deiner Mediathek/)).toBeVisible();

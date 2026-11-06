@@ -5,7 +5,10 @@ import { createClient } from "../../../lib/supabase/server";
 import { listAssets, type AssetRow } from "../../../lib/uploads/store";
 
 const leer = SECTIONS.find((s) => s.href === "/mediathek")!.leer;
-const mb = (bytes: number) => `${(bytes / 1024 / 1024).toLocaleString("de-DE", { maximumFractionDigits: 1 })} MB`;
+const groesse = (bytes: number) =>
+  bytes < 1024 * 1024
+    ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+    : `${(bytes / 1024 / 1024).toLocaleString("de-DE", { maximumFractionDigits: 1 })} MB`;
 
 export default async function Page() {
   await requireUser();
@@ -34,7 +37,7 @@ export default async function Page() {
           <ul className="medien">
             {assets.map((a) => (
               <li key={a.id}>
-                <strong>{a.original_filename}</strong> · {mb(a.size_bytes)} ·{" "}
+                <strong>{a.original_filename}</strong> · {groesse(a.size_bytes)} ·{" "}
                 {new Date(a.created_at).toLocaleDateString("de-DE")}
               </li>
             ))}

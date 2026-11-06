@@ -48,6 +48,21 @@ SUPABASE_TEST_URL=http://127.0.0.1:54321 SUPABASE_TEST_ANON_KEY=<anon key> npm t
 
 Sonst weiter nur Gerüst: kein Upload, keine Medienfunktion, kein Deployment. Das lokale Supabase hat E-Mail-Bestätigung aus (`supabase/config.toml`); ist sie am Zielprojekt an, verweist die Registrierung auf `/login` mit Hinweis.
 
+### Upload lokal prüfen (SIN-1387)
+Konto A lädt einen privaten Clip hoch und sieht ihn nach dem Neuladen; Konto B sieht weder Eintrag noch Datei. Ablauf: Die App prüft Typ, Größe (höchstens 500 MB), Rechte-Bestätigung, Dublette (`409`) und Quote (`413`) und gibt dann eine Signed Upload URL aus (`POST /api/uploads`). Der Browser lädt direkt in den privaten Bucket `social-media`. `POST /api/uploads/complete` legt danach unter RLS des Nutzers Asset, Rechte-Bestätigung und genau einen `analyze`-Job an. Größe und MIME-Typ kommen dabei aus Storage, nicht aus der Anfrage. Ohne Anmeldung antwortet `/api/*` mit `401`.
+
+```
+supabase start                         # mit Storage-API
+supabase db reset --local              # nur die lokale Docker-Datenbank
+docker exec -i supabase_db_Socialmedia-Agent psql -U postgres -v ON_ERROR_STOP=1 < supabase/tests/pending_migrations/20261106040000_sin1380_storage_bucket.psql
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key aus supabase status> npm run build
+NEXT_PUBLIC_SUPABASE_URL=… NEXT_PUBLIC_SUPABASE_ANON_KEY=… npx next start -p 3217
+SUPABASE_TEST_URL=http://127.0.0.1:54321 SUPABASE_TEST_ANON_KEY=<anon key> npx vitest run lib/uploads   # API-Ebene inkl. Direktabruf durch B
+LIVE_URL=http://127.0.0.1:3217 npm run test:nutzerweg                                                  # Browser, Konten A und B (Werte aus Infisical /leitstand)
+```
+
+Die beiden Testkonten müssen in der lokalen Auth existieren (gleiche Adressen und Passwörter wie in Infisical, z. B. per `POST /auth/v1/signup`). Der Bucket ist im gemeinsamen Projekt noch nicht angelegt (SIN-1411, PR #58). Grenzen: Den SHA-256 rechnet der Browser, der Worker prüft ihn erst beim Validieren nach. Bis dahin fehlen `asset_checks`, und das Asset ist nicht verwendbar (`asset_usable`). Ein Rate-Limit je Nutzer fehlt noch; Quote und Dublettensperre begrenzen den Speicher.
+
 ## Worker lokal
 Voraussetzungen: [uv](https://docs.astral.sh/uv/) und FFmpeg (`ffmpeg`/`ffprobe` im PATH).
 
