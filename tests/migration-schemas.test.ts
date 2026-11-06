@@ -27,6 +27,8 @@ describe("erlaubt", () => {
     "create index i on social_media.x (id);\n-- drop table public.x;\n/* alter table auth.users */",
     "insert into social_media.x (a) values ('public.x; drop table auth.users');",
     "create function social_media.f() returns int language sql as $$ select 1; $$;",
+    "revoke all on function social_media.f(uuid, text, text[]) from public, anon, authenticated;",
+    "grant execute on function social_media.f(uuid, integer), social_media.g() to service_role;",
   ])("%s", (sql) => {
     expect(check(sql).status).toBe(0);
   });
@@ -42,6 +44,8 @@ describe("abgelehnt", () => {
     "create index i on stromlauf.runs (id);",
     "grant select on all tables in schema public to anon;",
     "grant select on public.x to anon;",
+    "grant execute on function public.f(uuid, text) to anon;",
+    "grant execute on function social_media.f(uuid), public.g(int) to anon;",
     "insert into public.x values (1);",
     "update auth.users set email = null;",
     "delete from public.x;",
