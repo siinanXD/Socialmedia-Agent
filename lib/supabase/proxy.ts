@@ -31,6 +31,8 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const isPublic = PUBLIC_PATHS.includes(pathname);
   if (OPEN_PATHS.includes(pathname)) return response;
 
+  // API-Aufrufe aus dem Browser brauchen einen Statuscode, keine Login-Seite.
+  if (!signedIn && pathname.startsWith("/api/")) return NextResponse.json({ fehler: "anmeldung" }, { status: 401 });
   if (!signedIn && !isPublic) return redirectTo(request, "/login", response);
   if (signedIn && isPublic) return redirectTo(request, "/", response);
   return response;

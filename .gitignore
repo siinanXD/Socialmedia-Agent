@@ -22,6 +22,10 @@ tmp/
 *.mov
 *.mkv
 *.wav
+# Code-Ordner und der selbst erzeugte Testclip (SIN-1387) sind keine Nutzerinhalte
+!lib/uploads/
+!app/api/uploads/
+!tests/nutzerweg/nutzerweg-testclip.mp4
 *.mp3
 *.webm
 *.sqlite3

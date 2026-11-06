@@ -1,0 +1,30 @@
+-- SIN-1380: privater Storage-Bucket `social-media` und Zugriffsregeln auf storage.objects.
+-- ZURÜCKGEHALTEN: berührt das Schema `storage` des gemeinsamen Projekts. Deshalb liegt die Datei nicht in
+-- supabase/migrations/ (migrate.yml würde sie einspielen, der Schema-Wächter lehnt sie ab). Ob und wie sie
+-- angewendet wird, entscheidet SIN-1411. Bis dahin lädt nur supabase/tests/social_media_storage.test.sql sie in
+-- einer Transaktion, die zurückgerollt wird.
+-- Pfade: originals/<creator_id>/<asset_id>/<datei> (Nutzer: anlegen, lesen, löschen; nie ändern) und
+-- derived/<creator_id>/<job_id>/… (Nutzer: nur lesen; schreiben nur service_role, umgeht RLS).
+-- Jede Policy prüft bucket_id = 'social-media'; bestehende Buckets und Policies bleiben unberührt.
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('social-media', 'social-media', false, 524288000,
+        array['video/mp4', 'video/quicktime', 'image/jpeg', 'image/png']);
+
+create policy social_media_originals_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'social-media'
+    and (storage.foldername(name))[1] = 'originals'
+    and (storage.foldername(name))[2] in
+      (select id::text from social_media.creators where user_id = (select auth.uid())));
+
+create policy social_media_objects_select on storage.objects for select to authenticated
+  using (bucket_id = 'social-media'
+    and (storage.foldername(name))[1] in ('originals', 'derived')
+    and (storage.foldername(name))[2] in
+      (select id::text from social_media.creators where user_id = (select auth.uid())));
+
+create policy social_media_originals_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'social-media'
+    and (storage.foldername(name))[1] = 'originals'
+    and (storage.foldername(name))[2] in
+      (select id::text from social_media.creators where user_id = (select auth.uid())));

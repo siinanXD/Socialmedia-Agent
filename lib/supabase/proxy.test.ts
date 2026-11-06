@@ -24,6 +24,13 @@ describe("updateSession", () => {
     expect(new URL(res.headers.get("location")!).pathname).toBe("/login");
   });
 
+  it("antwortet ohne Session unter /api/ mit 401 statt einer Weiterleitung", async () => {
+    getUser.mockResolvedValue({ data: { user: null }, error: null });
+    const res = await updateSession(req("/api/uploads"));
+    expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ fehler: "anmeldung" });
+  });
+
   it("leitet auch bei Fehler der Serverprüfung um (Cookie allein genügt nicht)", async () => {
     getUser.mockResolvedValue({ data: { user: null }, error: new Error("jwt expired") });
     const res = await updateSession(req("/irgendwas"));
