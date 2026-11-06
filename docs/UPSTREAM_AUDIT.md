@@ -84,3 +84,17 @@ Nachtrag: SIN-1077 nennt FilmCraft und SoundCraft, das Audit vom 27.10. hat beid
 Grenzen: Die Qualitätseinstellungen sind nicht gleichwertig, also sagt die Dateigröße wenig. Keine Messung auf dem Server, kein Sehvergleich durch einen Menschen.
 
 **Entscheidung:** FFmpeg bleibt der Render-Weg, weil es schon läuft, schneller ist, auf dem Server verfügbar ist und keine Alpha-Abhängigkeit bringt. FilmCraft hat die Handy-Dateien im Test ohne Fehler verarbeitet und bleibt Kandidat für Handarbeit: Ein Storyboard lässt sich als `.fcproj` zum Nachbessern öffnen. Neu prüfen, wenn Sinan von Hand nachschneiden will. SoundCraft: nicht bewertet, kein Bedarf ohne Musik im Render.
+
+## 7. ClamAV für den Upload-Virenscan (SIN-1366, 06.11.2026)
+
+| Punkt | Befund | Quelle |
+| --- | --- | --- |
+| Lizenz | GPL-2.0. Läuft als eigener Prozess (`clamscan`/`clamdscan`), wird nicht eingelinkt. Der Worker bleibt dadurch frei von GPL-Pflichten für eigenen Code | GitHub-API `repos/Cisco-Talos/clamav` (`license.spdx_id = GPL-2.0`), 06.11.2026 |
+| Pflegestand | Aktiv. Letzter Push 22.10.2026, nicht archiviert. Releases 1.5.4 und 1.4.6 am 07.08.2026, 1.5.3 am 01.07.2026 | <https://github.com/Cisco-Talos/clamav/releases>, 06.11.2026 |
+| Sicherheitshinweise | Die letzten Releases beheben mehrere CVEs im Parser (1.5.4 u. a. CVE-2026-20337, CVE-2026-20345, CVE-2025-8088). Folge: immer die aktuelle Feature-Version einsetzen, den Scanner nicht als root und nur mit Lesezugriff auf die Datei laufen lassen | Release-Notes, ebd. |
+| Signaturen | `freshclam` lädt die Datenbank von ClamAVs CDN. Das Docker-Image `clamav/clamav:1.5` bringt Signaturen mit, die veralten können; `clamav/clamav:1.5_base` lädt sie beim Start, wenn kein Datenbank-Volume eingehängt ist. Empfohlen ist ein fester Feature-Tag statt `latest` | <https://docs.clamav.net/manual/Installing/Docker.html>, 06.11.2026 |
+| Exit-Codes | 0 kein Fund, 1 Fund, 2 Fehler | `man clamscan` (<https://linux.die.net/man/1/clamscan>); lokal nachgemessen, siehe unten |
+| Lokaler Beleg | `clamav/clamav:1.5` (ClamAV 1.5.4, Signaturen vom 01.11.2026), Flags wie im Worker (`--no-summary --stdout --`): EICAR → `Eicar-Test-Signature FOUND`, Exit 1; harmlose Datei → `OK`, Exit 0; fehlende Datei → Exit 2; beide Dateien danach byteidentisch (`sha256sum -c`) | Lauf am 06.11.2026, PR zu SIN-1366 |
+| Kosten | 0 € (Open Source, Signaturen kostenlos) | ebd. |
+
+**Entscheidung:** Übernehmen als Subprozess hinter `worker/socialmedia_worker/scan.py`, fail-closed. Ein Scan ist keine Garantie: Er erkennt nur bekannte Signaturen.
