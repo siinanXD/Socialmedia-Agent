@@ -114,6 +114,18 @@ behalten, verworfen = drop_near_duplicates(highlights, hashes)  # verworfen[i].r
 
 `frame_hash` verkleinert den Frame per `ffmpeg -f rawvideo` auf 9×8 Graustufen und vergleicht Nachbarpixel; zwei Frames gelten bis Hamming-Distanz 10 von 64 Bit (`MAX_DISTANCE`) als fast gleich, auch aus verschiedenen Dateien. Es gewinnt die höhere `confidence`, bei Gleichstand das frühere Highlight; Verworfene bleiben mit Grund im Ergebnis. Teilstand: nur visuelle Ähnlichkeit eines Frames (Anfang des Highlights), keine Inhaltsanalyse; gespiegelte oder anders zugeschnittene Aufnahmen gelten als verschieden. Gemessen nur an erzeugten Testclips (`worker/tests/test_dedupe.py`: gleiche Quelle mit Rauschen und Helligkeit 0 Bit, andere Testbilder 16–41 Bit), nicht an echtem Material kalibriert. Noch nicht angebunden: `analyze_asset` und `batch` rufen es nicht auf.
 
+Fotokarussell (SIN-1363, `socialmedia_worker.carousel`, nur FFmpeg):
+
+```python
+from pathlib import Path
+from socialmedia_worker.carousel import build_carousel
+
+result = build_carousel({"foto-1": Path("a.jpg"), "foto-2": Path("b.png")}, out_dir=Path("karussell"))
+# karussell/slide-01.jpg … (1080x1350), result.cover == slide-01.jpg, karussell/carousel-manifest.v1.json
+```
+
+Jedes Bild wird ganz in 1080×1350 (4:5) eingepasst und mit Schwarz aufgefüllt, nichts wird abgeschnitten; die Originale werden nur gelesen. Reihenfolge ohne Vorgabe: erst Bilder ohne Qualitätshinweis, dann Schärfe + Belichtung (`image_quality`); mit `order=[...]` genau diese Asset-IDs. Beinahe-Duplikate (`dedupe`) und alles über 10 Slides stehen mit Grund unter `omitted` (`near_duplicate_of:<id>`, `ueber_limit:10`, `nicht_in_reihenfolge`). Das Manifest (Schema `worker/schemas/carousel.v1.json`) nennt je Slide Asset-ID, SHA-256 der Quelle, Platz, Begründung und optional eine mitgegebene Caption; `approval_state` ist immer `wartet_auf_freigabe`. Weniger als 2 verschiedene Bilder: `CarouselError`, es wird nichts geschrieben; ein vorhandener Zielordner wird nicht überschrieben (`FileExistsError`). Teilstand: nur an erzeugten Testbildern belegt (`worker/tests/test_carousel.py`); kein Text im Bild, kein eigener Caption-Vorschlag (SIN-1359), kein CLI-Befehl, nicht an `batch` angebunden; 10 Slides und 4:5 sind Annahmen aus dem Issue.
+
 Segment-Signale und Bildqualität (nur FFmpeg-Filter, kein Modell, keine neue Abhängigkeit):
 
 ```python
