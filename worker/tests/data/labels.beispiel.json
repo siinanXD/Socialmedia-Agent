@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "asset_id": "asset-1",
+  "labels": [
+    { "start": 0.0, "end": 10.0, "note": "synthetisch: Einstieg" },
+    { "start": 20.0, "end": 30.0, "note": "synthetisch: Mitte" },
+    { "start": 50.0, "end": 60.0, "note": "synthetisch: Schluss" }
+  ]
+}
