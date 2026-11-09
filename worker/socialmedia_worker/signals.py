@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from socialmedia_worker.scenes import FfmpegNotFoundError
-from socialmedia_worker.validate import MediaRejectedError, validate_media
+from socialmedia_worker.validate import MediaLimits, MediaRejectedError, validate_media
 
 FFMPEG_TIMEOUT_S = 300
 # signalstats YDIF is the mean absolute luma difference (0..255) between consecutive frames.
@@ -94,7 +94,9 @@ def _loudness(path: Path, start: float, end: float) -> float:
     return round(min(max((db - LOUDNESS_FLOOR_DB) / -LOUDNESS_FLOOR_DB, 0.0), 1.0), 4)
 
 
-def segment_signals(path: Path, segments: list[tuple[float, float]]) -> list[SegmentSignal]:
+def segment_signals(
+    path: Path, segments: list[tuple[float, float]], limits: MediaLimits | None = None
+) -> list[SegmentSignal]:
     """Per (start, end) segment in seconds: motion and loudness, each normalised to 0..1.
 
     motion: mean `signalstats` YDIF (luma change between consecutive frames, 0..255) divided by
@@ -104,7 +106,7 @@ def segment_signals(path: Path, segments: list[tuple[float, float]]) -> list[Seg
     about reach or virality. The source is checked with validate_media before ffmpeg runs.
     """
     ffmpeg_path()
-    if validate_media(path).kind != "video":
+    if validate_media(path, limits).kind != "video":
         raise MediaRejectedError("unsupported_format", f"{path.name}: not a video")
     for start, end in segments:
         if not 0 <= start < end:

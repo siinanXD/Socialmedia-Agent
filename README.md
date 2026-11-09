@@ -132,4 +132,14 @@ extract_cover(result.path, at=1.0, out=Path("cover.jpg"))  # ein JPEG-Frame, gep
 `RenderError` bei ffmpeg-Exit != 0, leerer Ausgabe oder Timeout (600 s Render, 60 s Cover; unvollstaendige Ausgabe wird
 geloescht). Vor dem Rendern prueft `validate_media` die Quelle (Container, Groesse, Dauer, Aufloesung; sonst `MediaRejectedError`); geschrieben wird in eine Temp-Datei, die erst nach der Pruefung als `out` erscheint. Quellen ohne Audio werden ohne Tonspur gerendert. Kein Subjekt-Tracking, keine Untertitel, keine Musik, keine Varianten.
 
+Lange Dateien (SIN-1365, `socialmedia_worker.chunks`):
+
+```python
+from socialmedia_worker.chunks import analyze_chunked
+
+result = analyze_chunked(Path("lang.mp4"), "asset-1", on_progress=lambda fertig, alle: print(fertig, alle))
+```
+
+`analyze_asset` lehnt Videos über 30 Minuten weiter ab (`too_long`); nur `analyze_chunked` nimmt mehr, im Standard bis 3 Stunden (`CHUNKED_LIMITS`, über `limits` änderbar; die Größengrenze von 500 MB bleibt). Die Szenenerkennung läuft je Chunk von 600 s mit 5 s Überlappung (`chunk_s`, `overlap_s`); ffmpeg springt mit `-ss`/`-t` vor `-i` an die Stelle, Python sieht nur die gemeldeten Schnitte. Ein Schnitt in der Überlappung zählt einmal (Abstand bis 0,1 s gilt als derselbe), alle Zeiten sind absolut zur Quelldatei, `on_progress(fertig, alle)` feuert nach jedem Chunk. Teilstand: belegt an einem erzeugten 60-s-Clip (Chunk 20 s, dieselben Schnitte wie ohne Chunks, ±0,1 s) und an einem erzeugten 31-Minuten-Clip ohne Schnitte (`worker/tests/test_chunks.py`). Laufzeit und Speicher an einer echten Aufnahme über 30 Minuten sind nicht gemessen; die Signale laufen weiter je Segment (zwei ffmpeg-Aufrufe je 6-s-Fenster), bei 3 Stunden also rund 3.600 Aufrufe. Kein CLI-Befehl, nicht an `batch` angebunden.
+
 Medien-Validierung: `validate_media(path, limits)` (`validate.py`) prueft eine Quelldatei vor jeder Verarbeitung nach Inhalt (ffprobe, nicht Dateiendung): Format-Allowlist (MP4/MOV, JPEG/PNG), Groesse (`MAX_UPLOAD_MB`, Standard 500), Dauer (Standard 30 min), Aufloesung (Standard 8K), liefert `kind`, Container, Codec, Masse, Dauer und SHA-256. Verstoss -> `MediaRejectedError` mit `reason`-Code. Die Datei wird nur gelesen. Teilstand: nur Worker-seitige Pruefung, kein Upload, kein Virenscan, keine Quota; eine abgeschnittene Datei mit Index am Dateianfang wird nicht erkannt.
