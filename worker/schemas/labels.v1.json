@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "socialmedia-worker/labels/v1",
+  "title": "Menschlich markierte Highlights einer Datei (SIN-1375)",
+  "description": "Zeiten in Sekunden ab Dateianfang. asset_id muss zur Analyse (analysis.v1.json) passen.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "asset_id", "labels"],
+  "properties": {
+    "version": { "const": 1 },
+    "asset_id": { "type": "string", "minLength": 1 },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["start", "end"],
+        "properties": {
+          "start": { "type": "number", "minimum": 0 },
+          "end": { "type": "number", "exclusiveMinimum": 0 },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}

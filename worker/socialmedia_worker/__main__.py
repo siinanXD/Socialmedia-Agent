@@ -1,4 +1,4 @@
-"""CLI: ``python -m socialmedia_worker {analyze,batch,export,beispiel}``.
+"""CLI: ``python -m socialmedia_worker {analyze,batch,export,beispiel,evaluate}``.
 
 Exit-Codes: 0 ok, 1 Fehler, 2 Eingabe abgelehnt, 3 keine Freigabe (Export wartet).
 """
@@ -11,6 +11,7 @@ import sys
 from pathlib import Path
 
 from socialmedia_worker.checkpoints import reporter_aus_umgebung
+from socialmedia_worker.evaluate import IOU_MIN, evaluate, to_markdown
 from socialmedia_worker.pipeline import analyze_asset, beispiel, export_batch, run_batch
 from socialmedia_worker.validate import MediaRejectedError
 
@@ -45,6 +46,13 @@ def main(argv: list[str] | None = None) -> int:
         "beispiel", help="synthetisches Testmaterial erzeugen (zwei Clips, ein Bild)"
     )
     s.add_argument("ziel", type=Path)
+    v = sub.add_parser(
+        "evaluate", help="Highlights einer Analyse gegen menschliche Labels auswerten (SIN-1375)"
+    )
+    v.add_argument("--labels", type=Path, required=True, help="labels.v1.json")
+    v.add_argument("--analysis", type=Path, required=True, help="Ausgabe von analyze")
+    v.add_argument("--iou", type=float, default=IOU_MIN, help="Treffer ab dieser Überlappung")
+    v.add_argument("--markdown", action="store_true", help="Tabelle statt JSON ausgeben")
     args = p.parse_args(argv)
 
     if args.befehl == "analyze":
@@ -73,6 +81,19 @@ def main(argv: list[str] | None = None) -> int:
             print("keine Freigabe (oder abgelehnt): nichts exportiert", file=sys.stderr)
             return 3
         print(f"exportiert nach {ziel}")
+        return 0
+    if args.befehl == "evaluate":
+        try:
+            report = evaluate(
+                json.loads(args.labels.read_text(encoding="utf-8")),
+                json.loads(args.analysis.read_text(encoding="utf-8")),
+                args.iou,
+            )
+        except (ValueError, KeyError) as err:  # KeyError: Pflichtfeld fehlt in der Analyse
+            print(f"Eingabe abgelehnt: {err}", file=sys.stderr)
+            return 2
+        # ASCII-JSON: eine Windows-Konsole (cp1252) verstümmelt sonst die Umlaute
+        print(to_markdown(report) if args.markdown else json.dumps(report))
         return 0
     for datei in beispiel(args.ziel):
         print(datei)
