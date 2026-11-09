@@ -53,9 +53,9 @@ def test_different_sources_are_not_duplicates(tmp_path: Path) -> None:
 def test_frame_hash_is_deterministic_and_works_for_images(tmp_path: Path) -> None:
     clip = _clip(tmp_path / "a.mp4", "testsrc2")
     assert frame_hash(clip, at=1.0) == frame_hash(clip, at=1.0)
-    png = tmp_path / "a.png"
-    _ffmpeg("-ss", "1", "-i", str(clip), "-frames:v", "1", str(png))
-    assert hamming(frame_hash(png), frame_hash(clip, at=1.0)) <= MAX_DISTANCE
+    for name in ("a.png", "a.jpg"):
+        _ffmpeg("-ss", "1", "-i", str(clip), "-frames:v", "1", str(tmp_path / name))
+        assert hamming(frame_hash(tmp_path / name), frame_hash(clip, at=1.0)) <= MAX_DISTANCE
 
 
 def test_frame_hash_rejects_time_outside_the_clip_and_bad_files(tmp_path: Path) -> None:

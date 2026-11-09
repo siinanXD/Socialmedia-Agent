@@ -34,8 +34,9 @@ def frame_hash(path: Path, at: float = 0.0) -> int:
             raise ValueError(f"invalid at: need 0 <= at < {media.duration}s, got {at}")
     elif at != 0:
         raise ValueError(f"invalid at: {path.name} is an image, got {at}")
+    seek = ["-ss", str(at)] if media.kind == "video" else []  # -ss on a JPEG yields no frame
     proc = subprocess.run(
-        [ffmpeg, "-v", "error", "-nostdin", "-ss", str(at), "-i", str(path), "-frames:v", "1",
+        [ffmpeg, "-v", "error", "-nostdin", *seek, "-i", str(path), "-frames:v", "1",
          "-vf", f"scale={_W}:{_H}:flags=area,format=gray", "-f", "rawvideo", "-"],
         capture_output=True,
         timeout=HASH_TIMEOUT_S,
