@@ -103,6 +103,17 @@ print(manifest.to_json())  # validiert gegen worker/schemas/highlights.v1.json
 
 `signals` hat einen Wert je Segment (z. B. Bewegung, 0..1). Segmente unter `min_len` entfallen, längere werden auf die ersten `max_len` Sekunden gekürzt. `confidence` ist eine Heuristik (das begrenzte Signal), keine Aussage über Reichweite oder Viralität. Es gibt keine menschliche Korrektur.
 
+Beinahe-Duplikate (SIN-1354, `socialmedia_worker.dedupe`, eigener dHash ohne Bibliothek):
+
+```python
+from socialmedia_worker.dedupe import drop_near_duplicates, frame_hash
+
+hashes = [frame_hash(datei_von[h.asset_id], at=h.start) for h in highlights]  # 64 Bit je Frame
+behalten, verworfen = drop_near_duplicates(highlights, hashes)  # verworfen[i].reason == "near_duplicate_of:<asset_id>@<start>"
+```
+
+`frame_hash` verkleinert den Frame per `ffmpeg -f rawvideo` auf 9×8 Graustufen und vergleicht Nachbarpixel; zwei Frames gelten bis Hamming-Distanz 10 von 64 Bit (`MAX_DISTANCE`) als fast gleich, auch aus verschiedenen Dateien. Es gewinnt die höhere `confidence`, bei Gleichstand das frühere Highlight; Verworfene bleiben mit Grund im Ergebnis. Teilstand: nur visuelle Ähnlichkeit eines Frames (Anfang des Highlights), keine Inhaltsanalyse; gespiegelte oder anders zugeschnittene Aufnahmen gelten als verschieden. Gemessen nur an erzeugten Testclips (`worker/tests/test_dedupe.py`: gleiche Quelle mit Rauschen und Helligkeit 0 Bit, andere Testbilder 16–41 Bit), nicht an echtem Material kalibriert. Noch nicht angebunden: `analyze_asset` und `batch` rufen es nicht auf.
+
 Segment-Signale und Bildqualität (nur FFmpeg-Filter, kein Modell, keine neue Abhängigkeit):
 
 ```python
