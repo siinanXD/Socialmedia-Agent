@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "socialmedia-worker/carousel/v1",
+  "title": "Fotokarussell-Manifest (SIN-1363)",
+  "description": "Slides sind 1080x1350 JPEG. rationale beschreibt eine Heuristik (Schärfe, Belichtung), keine Aussage über Reichweite. approval_state bleibt wartet_auf_freigabe, bis ein Mensch freigibt.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "pipeline_version", "approval_state", "cover", "slides", "omitted"],
+  "properties": {
+    "version": { "const": 1 },
+    "pipeline_version": { "type": "string", "minLength": 1 },
+    "approval_state": { "const": "wartet_auf_freigabe" },
+    "cover": { "type": "string", "minLength": 1 },
+    "slides": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["position", "file", "asset_id", "sha256", "caption", "rationale"],
+        "properties": {
+          "position": { "type": "integer", "minimum": 1, "maximum": 10 },
+          "file": { "type": "string", "minLength": 1 },
+          "asset_id": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "caption": { "type": ["string", "null"] },
+          "rationale": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "omitted": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["asset_id", "sha256", "reason"],
+        "properties": {
+          "asset_id": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "reason": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
